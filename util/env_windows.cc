@@ -43,8 +43,7 @@ public:
 	virtual Status Skip(uint64_t n) {
 		LARGE_INTEGER li;
 		li.QuadPart = n;
-		BOOL success = SetFilePointerEx(file_, li, 0, FILE_CURRENT);
-		return success ? Status::OK() : Status::IOError(fname_);
+		return SetFilePointerEx(file_, li, 0, FILE_CURRENT) ? Status::OK() : Status::IOError(fname_);
 	}
 };
 
@@ -72,8 +71,8 @@ class WindowsWritableFile : public WritableFile {
 	static const size_t kBufferSize = 65536;
 	std::string fname_;
 	HANDLE file_;
-	BYTE buffer_[kBufferSize];
 	size_t pos_;
+	BYTE buffer_[kBufferSize];
 
 public:
 	WindowsWritableFile(const std::string& fname, HANDLE file) : fname_(fname), file_(file), pos_(0) {}
@@ -81,10 +80,8 @@ public:
 
 	virtual Status Append(const Slice& data) {
 		size_t totalBytesWritten = 0;
-		while(totalBytesWritten < data.size())
-		{
-			if(pos_ == kBufferSize)
-				Flush();
+		while(totalBytesWritten < data.size()) {
+			if(pos_ == kBufferSize) Flush();
 			size_t size = std::min(kBufferSize - pos_, data.size() - totalBytesWritten);
 			memcpy(buffer_ + pos_, data.data() + totalBytesWritten, size);
 			pos_ += size;
@@ -114,10 +111,8 @@ public:
 
 	virtual Status Sync() {
 		Status status = Flush();
-		if(!status.ok())
-			return status;
-		BOOL success = FlushFileBuffers(file_);
-		return success ? Status::OK() : Status::IOError(fname_);
+		if(!status.ok()) return status;
+		return FlushFileBuffers(file_) ? Status::OK() : Status::IOError(fname_);
 	}
 };
 
@@ -127,19 +122,13 @@ class WindowsFileLock : public FileLock {
 
 public:
 	WindowsFileLock(const std::string& fname, HANDLE file) : fname_(fname), file_(file) {}
-
-	const std::string& GetFileName() {
-		return fname_;
-	}
+	virtual ~WindowsFileLock() { Close(); }
+	const std::string& GetFileName() { return fname_; }
 
 	bool Close() {
 		bool success = (file_ == INVALID_HANDLE_VALUE || CloseHandle(file_));
 		file_ = INVALID_HANDLE_VALUE;
 		return success;
-	}
-
-	virtual ~WindowsFileLock() {
-		Close();
 	}
 };
 
@@ -148,15 +137,15 @@ class WindowsLogger : public Logger {
 
 public:
 	WindowsLogger(WritableFile* log) : log_(log) {}
-	~WindowsLogger() { delete log_; }
+	virtual ~WindowsLogger() { delete log_; }
 
 	// Write an entry to the log file with the specified format.
 	virtual void Logv(const char* format, va_list ap) {
 		const size_t kBufSize = 4096;
 		char buffer[kBufSize];
 		int written = _vsnprintf(buffer, kBufSize, format, ap);
-		log_->Append(Slice(buffer, written == -1 ? kBufSize : written));
-		log_->Append(Slice("\r\n", 2));
+		log_->Append(Slice(buffer, written >= 0 ? written : kBufSize));
+		log_->Append(Slice("\n", 1));
 	}
 };
 
@@ -178,8 +167,7 @@ public:
 		*result = 0;
 		HANDLE file = CreateFileA(fname.c_str(), GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE,
 			0, OPEN_EXISTING, FILE_FLAG_SEQUENTIAL_SCAN, 0);
-		if(file == INVALID_HANDLE_VALUE)
-			return Status::IOError(fname);
+		if(file == INVALID_HANDLE_VALUE) return Status::IOError(fname);
 		*result = new WindowsSequentialFile(fname, file);
 		return Status::OK();
 	}
@@ -195,8 +183,7 @@ public:
 		*result = 0;
 		HANDLE file = CreateFileA(fname.c_str(), GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE,
 			0, OPEN_EXISTING, FILE_FLAG_RANDOM_ACCESS, 0);
-		if(file == INVALID_HANDLE_VALUE)
-			return Status::IOError(fname);
+		if(file == INVALID_HANDLE_VALUE) return Status::IOError(fname);
 		*result = new WindowsRandomAccessFile(fname, file);
 		return Status::OK();
 	}
@@ -211,8 +198,7 @@ public:
 	virtual Status NewWritableFile(const std::string& fname, WritableFile** result) {
 		*result = 0;
 		HANDLE file = CreateFileA(fname.c_str(), GENERIC_WRITE, 0, 0, CREATE_ALWAYS, 0, 0);
-		if(file == INVALID_HANDLE_VALUE)
-			return Status::IOError(fname);
+		if(file == INVALID_HANDLE_VALUE) return Status::IOError(fname);
 		*result = new WindowsWritableFile(fname, file);
 		return Status::OK();
 	}
@@ -232,27 +218,24 @@ public:
 		dirWildcard.append("\\*");
 		WIN32_FIND_DATAA fd = {0};
 		HANDLE h = FindFirstFileA(dirWildcard.c_str(), &fd);
-		if(h == INVALID_HANDLE_VALUE)
-			return Status::IOError(dir);
-		do
-		{
+		if(h == INVALID_HANDLE_VALUE) return Status::IOError(dir);
+		do {
 			if(!(fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
 				result->push_back(fd.cFileName);
-		}while(FindNextFileA(h, &fd));
+		}
+		while(FindNextFileA(h, &fd));
 		FindClose(h);
 		return Status::OK();
 	}
 
 	// Delete the named file.
 	virtual Status DeleteFile(const std::string& fname) {
-		BOOL success = DeleteFileA(fname.c_str());
-		return success ? Status::OK() : Status::IOError(fname);
+		return DeleteFileA(fname.c_str()) ? Status::OK() : Status::IOError(fname);
 	}
 
 	// Create the specified directory.
 	virtual Status CreateDir(const std::string& dirname) {
-		BOOL success = CreateDirectoryA(dirname.c_str(), 0);
-		return success ? Status::OK() : Status::IOError(dirname);
+		return CreateDirectoryA(dirname.c_str(), 0) ? Status::OK() : Status::IOError(dirname);
 	}
 
 	// Delete the specified directory.
@@ -272,8 +255,7 @@ public:
 		*file_size = 0;
 		WIN32_FIND_DATAA fd;
 		HANDLE h = FindFirstFileA(fname.c_str(), &fd);
-		if(h == INVALID_HANDLE_VALUE)
-			return Status::IOError(fname);
+		if(h == INVALID_HANDLE_VALUE) return Status::IOError(fname);
 		*file_size = (static_cast<uint64_t>(fd.nFileSizeHigh) << 32) + fd.nFileSizeLow;
 		FindClose(h);
 		return Status::OK();
@@ -302,8 +284,7 @@ public:
 	virtual Status LockFile(const std::string& fname, FileLock** lock) {
 		*lock = 0;
 		HANDLE file = CreateFileA(fname.c_str(), GENERIC_READ | GENERIC_WRITE, 0, 0, OPEN_ALWAYS, 0, 0);
-		if(file == INVALID_HANDLE_VALUE)
-			return Status::IOError(fname);
+		if(file == INVALID_HANDLE_VALUE) return Status::IOError(fname);
 		*lock = new WindowsFileLock(fname, file);
 		return Status::OK();
 	}
