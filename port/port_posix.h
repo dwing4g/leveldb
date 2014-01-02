@@ -37,6 +37,8 @@
   // See http://code.google.com/p/android/issues/detail?id=39824
   #include <endian.h>
   #define PLATFORM_IS_LITTLE_ENDIAN  (_BYTE_ORDER == _LITTLE_ENDIAN)
+#elif defined(OS_MINGW)
+  #define PLATFORM_IS_LITTLE_ENDIAN true
 #else
   #include <endian.h>
 #endif
@@ -55,7 +57,7 @@
 
 #if defined(OS_MACOSX) || defined(OS_SOLARIS) || defined(OS_FREEBSD) ||\
     defined(OS_NETBSD) || defined(OS_OPENBSD) || defined(OS_DRAGONFLYBSD) ||\
-    defined(OS_ANDROID) || defined(OS_HPUX)
+    defined(OS_ANDROID) || defined(OS_HPUX) || defined(OS_MINGW)
 // Use fread/fwrite/fflush on platforms without _unlocked variants
 #define fread_unlocked fread
 #define fwrite_unlocked fwrite

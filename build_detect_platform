@@ -141,6 +141,14 @@ case "$TARGET_OS" in
         PLATFORM_SHARED_CFLAGS=
         PLATFORM_SHARED_VERSIONED=
         ;;
+    MINGW*)
+        PLATFORM=OS_LINUX
+        COMMON_FLAGS="$MEMCMP_FLAG -pthread -DOS_LINUX -DOS_MINGW"
+        PLATFORM_LDFLAGS="-lpthread -static -s"
+        PORT_FILE=port/port_posix.cc
+        PLATFORM_SHARED_EXT="dll"
+        PLATFORM_SHARED_CFLAGS=
+        ;;
     *)
         echo "Unknown platform!" >&2
         exit 1

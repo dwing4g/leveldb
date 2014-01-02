@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
+#ifndef OS_MINGW
+
 #include <deque>
 #include <set>
 #include <dirent.h>
@@ -605,3 +607,5 @@ Env* Env::Default() {
 }
 
 }  // namespace leveldb
+
+#endif
