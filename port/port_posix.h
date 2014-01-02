@@ -39,6 +39,59 @@
   #define PLATFORM_IS_LITTLE_ENDIAN  (_BYTE_ORDER == _LITTLE_ENDIAN)
 #elif defined(OS_MINGW)
   #define PLATFORM_IS_LITTLE_ENDIAN true
+  #include <stdarg.h>
+  #include <string.h>
+  #include <stdio.h>
+  inline const char* cvt_fmt(const char* buf)
+  {
+    static char* s_buf = new char[65536]; // big enough
+    char* d = s_buf;
+    for(const char* p = buf;;)
+    {
+      const char* q = strstr(p, "ll");
+      if(!q)
+      {
+        strcpy(d, p);
+        return s_buf;
+      }
+      if(q[2] == 'd' || q[2] == 'u')
+      {
+        int n = q - p;
+        memcpy(d, p, n); d += n;
+        memcpy(d, "I64", 3); d += 3;
+      }
+      else
+      {
+        int n = q - p + 2;
+        memcpy(d, p, n); d += n;
+      }
+      p = q + 2;
+    }
+  }
+  inline int printf_fix(const char* fmt, ...)
+  {
+    va_list vl;
+    va_start(vl, fmt);
+    vprintf(cvt_fmt(fmt), vl);
+    va_end(vl);
+  }
+  inline int fprintf_fix(FILE* fp, const char* fmt, ...)
+  {
+    va_list vl;
+    va_start(vl, fmt);
+    vfprintf(fp, cvt_fmt(fmt), vl);
+    va_end(vl);
+  }
+  inline int snprintf_fix(char* buf, size_t buflen, const char* fmt, ...)
+  {
+    va_list vl;
+    va_start(vl, fmt);
+    _vsnprintf(buf, buflen, cvt_fmt(fmt), vl);
+    va_end(vl);
+  }
+  #define printf printf_fix
+  #define fprintf fprintf_fix
+  #define snprintf snprintf_fix
 #else
   #include <endian.h>
 #endif

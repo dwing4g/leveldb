@@ -143,7 +143,7 @@ public:
 	virtual void Logv(const char* format, va_list ap) {
 		const size_t kBufSize = 4096;
 		char buffer[kBufSize];
-		int written = _vsnprintf(buffer, kBufSize, format, ap);
+		int written = _vsnprintf(buffer, kBufSize, cvt_fmt(format), ap);
 		log_->Append(Slice(buffer, written >= 0 ? written : kBufSize));
 		log_->Append(Slice("\n", 1));
 	}
