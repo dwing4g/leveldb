@@ -1,3 +1,5 @@
+#ifdef ENABLE_JNI
+
 #include <jni.h>
 #include "leveldb/db.h"
 #include "leveldb/options.h"
@@ -120,3 +122,5 @@ extern "C" JNIEXPORT jint JNICALL Java_jane_core_StorageLevelDB_leveldb_1write
 	g_wb.Clear();
 	return s.ok() ? 0 : 6;
 }
+
+#endif
