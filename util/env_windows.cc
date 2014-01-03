@@ -241,7 +241,7 @@ public:
 		SHFILEOPSTRUCTA fileop = {0};
 		fileop.wFunc = FO_DELETE;
 		fileop.pFrom = dirname2.c_str();
-		fileop.fFlags = 0; // FOF_NO_UI;
+		fileop.fFlags = 0x14; // FOF_SILENT | FOF_NOCONFIRMATION
 		int nResult = SHFileOperationA(&fileop);
 		return !nResult && !fileop.fAnyOperationsAborted ? Status::OK() : Status::IOError(dirname);
 	}
