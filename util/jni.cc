@@ -12,6 +12,7 @@ static ReadOptions g_ro;
 static WriteOptions g_wo;
 static WriteBatch g_wb; // optimized for single thread writing
 
+// public native static long leveldb_open(String path, int write_bufsize, int cache_size);
 extern "C" JNIEXPORT jlong JNICALL Java_jane_core_StorageLevelDB_leveldb_1open
 	(JNIEnv* jenv, jclass jcls, jstring path, jint write_bufsize, jint cache_size)
 {
@@ -30,12 +31,14 @@ extern "C" JNIEXPORT jlong JNICALL Java_jane_core_StorageLevelDB_leveldb_1open
 	return s.ok() ? (jlong)db : 0;
 }
 
+// public native static void leveldb_close(long handle);
 extern "C" JNIEXPORT void JNICALL Java_jane_core_StorageLevelDB_leveldb_1close
 	(JNIEnv* jenv, jclass jcls, jlong handle)
 {
 	delete (DB*)handle;
 }
 
+// public native static byte[] leveldb_get(long handle, byte[] key, int keylen);
 extern "C" JNIEXPORT jbyteArray JNICALL Java_jane_core_StorageLevelDB_leveldb_1get
 	(JNIEnv* jenv, jclass jcls, jlong handle, jbyteArray key, jint keylen)
 {
@@ -55,8 +58,9 @@ extern "C" JNIEXPORT jbyteArray JNICALL Java_jane_core_StorageLevelDB_leveldb_1g
 	return val;
 }
 
+// public native static int leveldb_write(long handle, Iterator<Entry<Octets, OctetsStream>> buf);
 extern "C" JNIEXPORT jint JNICALL Java_jane_core_StorageLevelDB_leveldb_1write
-	(JNIEnv* jenv, jclass jcls, jlong handle, jobject it) // java.util.Iterator<java.util.Map.Entry<jane.core.Octets, jane.core.OctetsStream>>
+	(JNIEnv* jenv, jclass jcls, jlong handle, jobject it)
 {
 	DB* db = (DB*)handle;
 	if(!db || !it) return 1;

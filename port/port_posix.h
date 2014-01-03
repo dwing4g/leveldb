@@ -51,6 +51,7 @@
       const char* q = strstr(p, "ll");
       if(!q)
       {
+        if(p == buf) return buf;
         strcpy(d, p);
         return s_buf;
       }

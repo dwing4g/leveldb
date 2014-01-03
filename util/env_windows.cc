@@ -197,13 +197,12 @@ public:
 	// The returned file will only be accessed by one thread at a time.
 	virtual Status NewWritableFile(const std::string& fname, WritableFile** result) {
 		*result = 0;
-		HANDLE file = CreateFileA(fname.c_str(), GENERIC_WRITE, 0, 0, CREATE_ALWAYS, 0, 0);
+		HANDLE file = CreateFileA(fname.c_str(), GENERIC_WRITE, FILE_SHARE_READ, 0, CREATE_ALWAYS, 0, 0);
 		if(file == INVALID_HANDLE_VALUE) return Status::IOError(fname);
 		*result = new WindowsWritableFile(fname, file);
 		return Status::OK();
 	}
 
-	// Returns true iff the named file exists.
 	virtual bool FileExists(const std::string& fname) {
 		DWORD attr = GetFileAttributesA(fname.c_str());
 		return attr != INVALID_FILE_ATTRIBUTES && !(attr & FILE_ATTRIBUTE_DIRECTORY);
@@ -228,17 +227,14 @@ public:
 		return Status::OK();
 	}
 
-	// Delete the named file.
 	virtual Status DeleteFile(const std::string& fname) {
 		return DeleteFileA(fname.c_str()) ? Status::OK() : Status::IOError(fname);
 	}
 
-	// Create the specified directory.
 	virtual Status CreateDir(const std::string& dirname) {
 		return CreateDirectoryA(dirname.c_str(), 0) ? Status::OK() : Status::IOError(dirname);
 	}
 
-	// Delete the specified directory.
 	virtual Status DeleteDir(const std::string& dirname) {
 		std::string dirname2(dirname);
 		dirname2.push_back('\0');
@@ -250,18 +246,15 @@ public:
 		return !nResult && !fileop.fAnyOperationsAborted ? Status::OK() : Status::IOError(dirname);
 	}
 
-	// Store the size of fname in *file_size.
 	virtual Status GetFileSize(const std::string& fname, uint64_t* file_size) {
 		*file_size = 0;
-		WIN32_FIND_DATAA fd;
-		HANDLE h = FindFirstFileA(fname.c_str(), &fd);
-		if(h == INVALID_HANDLE_VALUE) return Status::IOError(fname);
-		*file_size = (static_cast<uint64_t>(fd.nFileSizeHigh) << 32) + fd.nFileSizeLow;
-		FindClose(h);
+		WIN32_FILE_ATTRIBUTE_DATA fad;
+		if(!GetFileAttributesExA(fname.c_str(), GetFileExInfoStandard, &fad))
+			return Status::IOError(fname);
+		*file_size = (static_cast<uint64_t>(fad.nFileSizeHigh) << 32) + fad.nFileSizeLow;
 		return Status::OK();
 	}
 
-	// Rename file src to target.
 	virtual Status RenameFile(const std::string& src, const std::string& target) {
 		return MoveFileExA(src.c_str(), target.c_str(), MOVEFILE_REPLACE_EXISTING) ?
 			Status::OK() : Status::IOError(src, target);
@@ -345,7 +338,6 @@ public:
 		return count.QuadPart * 1000000LL / freq_.QuadPart;
 	}
 
-	// Sleep/delay the thread for the perscribed number of micro-seconds.
 	virtual void SleepForMicroseconds(int micros) {
 		// round up to the next millisecond
 		Sleep((micros + 999) / 1000);
