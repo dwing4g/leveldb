@@ -5,12 +5,14 @@
 #include "leveldb/options.h"
 #include "leveldb/cache.h"
 #include "leveldb/write_batch.h"
+#include "leveldb/filter_policy.h"
 
 using namespace leveldb;
 
-static ReadOptions g_ro;
-static WriteOptions g_wo;
-static WriteBatch g_wb; // optimized for single thread writing
+static ReadOptions			g_ro;		// safe for global shared instance
+static WriteOptions			g_wo;		// safe for global shared instance
+static const FilterPolicy*	g_fp = 0;	// safe for global shared instance
+static WriteBatch			g_wb;		// optimized for single thread writing, fix it if concurrent writing
 
 // public native static long leveldb_open(String path, int write_bufsize, int cache_size);
 extern "C" JNIEXPORT jlong JNICALL Java_jane_core_StorageLevelDB_leveldb_1open
@@ -22,6 +24,7 @@ extern "C" JNIEXPORT jlong JNICALL Java_jane_core_StorageLevelDB_leveldb_1open
 	opt.write_buffer_size = (write_bufsize > 0x100000 ? write_bufsize : 0x100000);
 	opt.block_cache = NewLRUCache(cache_size > 0x100000 ? cache_size : 0x100000);
 	opt.compression = kNoCompression;
+	opt.filter_policy = (g_fp ? g_fp : (g_fp = NewBloomFilterPolicy(10)));
 	g_ro.fill_cache = false;
 	g_wo.sync = true;
 	const char* pathptr = jenv->GetStringUTFChars(path, 0);
@@ -126,5 +129,19 @@ extern "C" JNIEXPORT jint JNICALL Java_jane_core_StorageLevelDB_leveldb_1write
 	g_wb.Clear();
 	return s.ok() ? 0 : 6;
 }
+
+/* TODO:
+* iterator interface:
+1. new/delete iterator with new/delete snapshot
+2. set iterator to first/last/key/next/prev and return key/value
+
+* hot full/incremental backup:
+1. lock backup mutex lock(guard with env.rename/delfile/deldir, use port::Mutex)
+2. get current db file set, copy/append *.ldb/*.log/MANIFEST-* to backup dir
+3. copy CURRENT file to backup dir and rename to CURRENT-[date]-[time]
+4. [optional] copy LOG file to backup dir and rename to LOG-[date]-[time]
+5. log these copy/append filenames to backup dir and rename to BACKUP-[date]-[time]
+6. unlock the backup mutex lock
+*/
 
 #endif

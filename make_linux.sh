@@ -12,12 +12,15 @@ OBJ_FILES="builder.o c.o db_impl.o db_iter.o dbformat.o filename.o log_reader.o 
 
 COMPILE="g++ -DOS_LINUX -DLEVELDB_PLATFORM_POSIX -DSNAPPY -DENABLE_JNI -DNDEBUG -I. -Iinclude -I${JAVA_HOME}/include -I${JAVA_HOME}/include/linux -O3 -ffast-math -fweb -fomit-frame-pointer -fmerge-all-constants -fno-builtin-memcmp -fPIC -pipe -pthread -s"
 
+echo building libleveldbjni.so ...
 $COMPILE -shared -Wl,-soname -Wl,libleveldbjni.so -o libleveldbjni.so $CORE_FILES
 
+echo building libleveldb.a ...
 $COMPILE -c $CORE_FILES $TEST_FILES
 ar -rs libleveldb.a $OBJ_FILES
 rm -f *.o 2> /dev/null
 
+echo building db-tools ...
 $COMPILE -o db_bench     db/db_bench.cc     libleveldb.a
 $COMPILE -o db_test      db/db_test.cc      libleveldb.a
 $COMPILE -o leveldb_main db/leveldb_main.cc libleveldb.a

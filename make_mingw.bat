@@ -14,12 +14,15 @@ set OBJ_FILES=builder.o c.o db_impl.o db_iter.o dbformat.o filename.o log_reader
 
 set COMPILE=g++ -DOS_LINUX -DOS_MINGW -DLEVELDB_PLATFORM_POSIX -DSNAPPY -DENABLE_JNI -DNDEBUG -I. -Iinclude -Isnappy -I"%JAVA_HOME%/include" -I"%JAVA_HOME%/include/win64" -I"%JAVA_HOME%/include/win32" -Ofast -flto -fwhole-program -ffast-math -fweb -fomit-frame-pointer -fmerge-all-constants -fno-builtin-memcmp -pipe -pthread -static -s -lpthread
 
+echo building leveldbjni.dll ...
 %COMPILE% -shared -Wl,--image-base,0x10000000 -Wl,--kill-at -Wl,-soname -Wl,leveldbjni.dll -o leveldbjni.dll %CORE_FILES%
 
+echo building libleveldb.a ...
 %COMPILE% -c %CORE_FILES% %TEST_FILES%
 ar -rs libleveldb.a %OBJ_FILES%
 del *.o 2>nul
 
+echo building db-tools ...
 %COMPILE% -o db_bench.exe     db/db_bench.cc     libleveldb.a
 %COMPILE% -o db_test.exe      db/db_test.cc      libleveldb.a
 %COMPILE% -o leveldb_main.exe db/leveldb_main.cc libleveldb.a
