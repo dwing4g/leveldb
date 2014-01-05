@@ -31,6 +31,8 @@
 
 namespace leveldb {
 
+port::Mutex g_mutex_backup;
+
 namespace {
 
 static Status IOError(const std::string& context, int err_number) {
@@ -375,9 +377,11 @@ class PosixEnv : public Env {
 
   virtual Status DeleteFile(const std::string& fname) {
     Status result;
+    g_mutex_backup.Lock();
     if (unlink(fname.c_str()) != 0) {
       result = IOError(fname, errno);
     }
+    g_mutex_backup.Unlock();
     return result;
   }
 
@@ -391,9 +395,11 @@ class PosixEnv : public Env {
 
   virtual Status DeleteDir(const std::string& name) {
     Status result;
+    g_mutex_backup.Lock();
     if (rmdir(name.c_str()) != 0) {
       result = IOError(name, errno);
     }
+    g_mutex_backup.Unlock();
     return result;
   }
 
@@ -411,9 +417,11 @@ class PosixEnv : public Env {
 
   virtual Status RenameFile(const std::string& src, const std::string& target) {
     Status result;
+    g_mutex_backup.Lock();
     if (rename(src.c_str(), target.c_str()) != 0) {
       result = IOError(src, errno);
     }
+    g_mutex_backup.Unlock();
     return result;
   }
 

@@ -1,11 +1,15 @@
 #ifdef ENABLE_JNI
 
+#include <stdio.h>
 #include <jni.h>
 #include "leveldb/db.h"
+#include "leveldb/env.h"
 #include "leveldb/options.h"
 #include "leveldb/cache.h"
 #include "leveldb/write_batch.h"
 #include "leveldb/filter_policy.h"
+#include "port/port.h"
+#include "db/filename.h"
 
 using namespace leveldb;
 
@@ -130,18 +134,95 @@ extern "C" JNIEXPORT jint JNICALL Java_jane_core_StorageLevelDB_leveldb_1write
 	return s.ok() ? 0 : 6;
 }
 
+static int64_t AppendFile(Env& env, const std::string& srcfile, const std::string& dstfile)
+{
+	uint64_t srcsize = 0, dstsize = 0;
+	env.GetFileSize(srcfile, &srcsize);
+	env.GetFileSize(dstfile, &dstsize);
+	if(srcsize <= dstsize) return 0;
+	SequentialFile* sf = 0;
+	if(!env.NewSequentialFile(srcfile, &sf).ok() || !sf) return -11;
+	if(!sf->Skip(dstsize).ok()) { delete sf; return -12; }
+	FILE* fp = fopen(dstfile.c_str(), "wb+");
+	if(!fp) { delete sf; return -13; }
+	fseek(fp, dstsize, SEEK_SET);
+	const size_t BUFSIZE = 65536;
+	Slice slice; Status s; size_t size; int64_t res = 0; char buf[BUFSIZE];
+	do
+	{
+		s = sf->Read(BUFSIZE, &slice, buf);
+		size = slice.size();
+		if(size <= 0) break;
+		if(fwrite(buf, 1, size, fp) != size) { fclose(fp); delete sf; return -14; }
+		res += size;
+	}
+	while(s.ok());
+	fclose(fp);
+	delete sf;
+	return res;
+}
+
+// public native static long leveldb_backup(String srcpath, String dstpath, String datetime);
+extern "C" JNIEXPORT jlong JNICALL Java_jane_core_StorageLevelDB_leveldb_1backup
+	(JNIEnv* jenv, jclass jcls, jstring srcpath, jstring dstpath, jstring datetime)
+{
+	if(!srcpath || !dstpath || !datetime) return -1;
+	Env* env = Env::Default();
+	if(!env) return -2;
+	const char* srcpathptr = jenv->GetStringUTFChars(srcpath, 0);
+	if(!srcpathptr) return -3;
+	std::string srcpathstr(srcpathptr);
+	jenv->ReleaseStringUTFChars(srcpath, srcpathptr);
+	const char* dstpathptr = jenv->GetStringUTFChars(dstpath, 0);
+	if(!dstpathptr) return -4;
+	std::string dstpathstr(dstpathptr);
+	jenv->ReleaseStringUTFChars(dstpath, dstpathptr);
+	const char* datetimeptr = jenv->GetStringUTFChars(datetime, 0);
+	if(!datetimeptr) return -5;
+	std::string datetimestr(datetimeptr);
+	jenv->ReleaseStringUTFChars(datetime, datetimeptr);
+
+	jlong n = 0;
+	std::vector<std::string> files;
+	std::string files_saved;
+	env->CreateDir(dstpathstr);
+	g_mutex_backup.Lock();
+	if(!env->GetChildren(srcpathstr, &files).ok()) { g_mutex_backup.Unlock(); return -6; }
+	for(std::vector<std::string>::const_iterator it = files.begin(), ie = files.end(); it != ie; ++it)
+	{
+		uint64_t num;
+		FileType ft;
+		if(!ParseFileName(*it, &num, &ft)) continue;
+		if(ft == kTableFile || ft == kLogFile || ft == kDescriptorFile)
+		{
+			int64_t r = AppendFile(*env, srcpathstr + '/' + *it, dstpathstr + '/' + *it);
+			if(r > 0) n += r; // log error?
+			files_saved.append(*it);
+			files_saved.append("\n");
+		}
+		else if(ft == kCurrentFile)
+		{
+			int64_t r = AppendFile(*env, srcpathstr + '/' + *it, dstpathstr + '/' + *it + '-' + datetimestr);
+			if(r > 0) n += r; // log error?
+			files_saved.append(*it + '-' + datetimestr);
+			files_saved.append("\n");
+		}
+		// [optional] copy LOG file to backup dir and rename to LOG-[datetime]
+	}
+	g_mutex_backup.Unlock();
+	WritableFile* wf = 0;
+	if(!env->NewWritableFile(dstpathstr + '/' + "BACKUP" + '-' + datetimestr, &wf).ok()) return -7;
+	if(!wf->Append(Slice(files_saved)).ok()) return -8;
+	if(!wf->Sync().ok()) return -9;
+	wf->Close();
+	delete wf;
+	return n;
+}
+
 /* TODO:
 * iterator interface:
 1. new/delete iterator with new/delete snapshot
 2. set iterator to first/last/key/next/prev and return key/value
-
-* hot full/incremental backup:
-1. lock backup mutex lock(guard with env.rename/delfile/deldir, use port::Mutex)
-2. get current db file set, copy/append *.ldb/*.log/MANIFEST-* to backup dir
-3. copy CURRENT file to backup dir and rename to CURRENT-[date]-[time]
-4. [optional] copy LOG file to backup dir and rename to LOG-[date]-[time]
-5. log these copy/append filenames to backup dir and rename to BACKUP-[date]-[time]
-6. unlock the backup mutex lock
 */
 
 #endif

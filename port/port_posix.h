@@ -208,6 +208,9 @@ inline bool GetHeapProfile(void (*func)(void*, const char*, int), void* arg) {
 }
 
 } // namespace port
+
+extern port::Mutex g_mutex_backup;
+
 } // namespace leveldb
 
 #endif  // STORAGE_LEVELDB_PORT_PORT_POSIX_H_
