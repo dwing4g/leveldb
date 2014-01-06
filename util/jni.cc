@@ -1,3 +1,7 @@
+// Copyright (c) 2011 The LevelDB Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file. See the AUTHORS file for names of contributors.
+
 #ifdef ENABLE_JNI
 
 #include <stdio.h>
@@ -8,15 +12,17 @@
 #include "leveldb/cache.h"
 #include "leveldb/write_batch.h"
 #include "leveldb/filter_policy.h"
+#include "leveldb/iterator.h"
 #include "port/port.h"
 #include "db/filename.h"
 
 using namespace leveldb;
 
-static ReadOptions			g_ro;		// safe for global shared instance
-static WriteOptions			g_wo;		// safe for global shared instance
-static const FilterPolicy*	g_fp = 0;	// safe for global shared instance
-static WriteBatch			g_wb;		// optimized for single thread writing, fix it if concurrent writing
+static ReadOptions			g_ro_cached;	// safe for global shared instance
+static ReadOptions			g_ro_nocached;	// safe for global shared instance
+static WriteOptions			g_wo;			// safe for global shared instance
+static const FilterPolicy*	g_fp = 0;		// safe for global shared instance
+static WriteBatch			g_wb;			// optimized for single thread writing, fix it if concurrent writing
 
 // public native static long leveldb_open(String path, int write_bufsize, int cache_size);
 extern "C" JNIEXPORT jlong JNICALL Java_jane_core_StorageLevelDB_leveldb_1open
@@ -29,7 +35,7 @@ extern "C" JNIEXPORT jlong JNICALL Java_jane_core_StorageLevelDB_leveldb_1open
 	opt.block_cache = NewLRUCache(cache_size > 0x100000 ? cache_size : 0x100000);
 	opt.compression = kNoCompression;
 	opt.filter_policy = (g_fp ? g_fp : (g_fp = NewBloomFilterPolicy(10)));
-	g_ro.fill_cache = false;
+	g_ro_nocached.fill_cache = false;
 	g_wo.sync = true;
 	const char* pathptr = jenv->GetStringUTFChars(path, 0);
 	DB* db = 0;
@@ -45,7 +51,7 @@ extern "C" JNIEXPORT void JNICALL Java_jane_core_StorageLevelDB_leveldb_1close
 	delete (DB*)handle;
 }
 
-// public native static byte[] leveldb_get(long handle, byte[] key, int keylen);
+// public native static byte[] leveldb_get(long handle, byte[] key, int keylen); // return null for not found
 extern "C" JNIEXPORT jbyteArray JNICALL Java_jane_core_StorageLevelDB_leveldb_1get
 	(JNIEnv* jenv, jclass jcls, jlong handle, jbyteArray key, jint keylen)
 {
@@ -56,7 +62,7 @@ extern "C" JNIEXPORT jbyteArray JNICALL Java_jane_core_StorageLevelDB_leveldb_1g
 	jbyte* keyptr = jenv->GetByteArrayElements(key, 0);
 	if(!keyptr) return 0;
 	std::string valstr;
-	Status s = db->Get(g_ro, Slice((const char*)keyptr, (size_t)keylen), &valstr);
+	Status s = db->Get(g_ro_cached, Slice((const char*)keyptr, (size_t)keylen), &valstr);
 	jenv->ReleaseByteArrayElements(key, keyptr, JNI_ABORT);
 	if(!s.ok()) return 0;
 	jsize vallen = valstr.size();
@@ -65,7 +71,7 @@ extern "C" JNIEXPORT jbyteArray JNICALL Java_jane_core_StorageLevelDB_leveldb_1g
 	return val;
 }
 
-// public native static int leveldb_write(long handle, Iterator<Entry<Octets, OctetsStream>> buf);
+// public native static int leveldb_write(long handle, Iterator<Entry<Octets, OctetsStream>> buf); // return 0 for ok
 extern "C" JNIEXPORT jint JNICALL Java_jane_core_StorageLevelDB_leveldb_1write
 	(JNIEnv* jenv, jclass jcls, jlong handle, jobject it)
 {
@@ -162,7 +168,7 @@ static int64_t AppendFile(Env& env, const std::string& srcfile, const std::strin
 	return res;
 }
 
-// public native static long leveldb_backup(String srcpath, String dstpath, String datetime);
+// public native static long leveldb_backup(String srcpath, String dstpath, String datetime); // return byte-size of copied data
 extern "C" JNIEXPORT jlong JNICALL Java_jane_core_StorageLevelDB_leveldb_1backup
 	(JNIEnv* jenv, jclass jcls, jstring srcpath, jstring dstpath, jstring datetime)
 {
@@ -219,10 +225,83 @@ extern "C" JNIEXPORT jlong JNICALL Java_jane_core_StorageLevelDB_leveldb_1backup
 	return n;
 }
 
-/* TODO:
-* iterator interface:
-1. new/delete iterator with new/delete snapshot
-2. set iterator to first/last/key/next/prev and return key/value
-*/
+// public native static long leveldb_iter_new(long handle, byte[] key, int keylen, int type); // type=0|1|2|3: <|<=|>=|>key
+extern "C" JNIEXPORT jlong JNICALL Java_jane_core_StorageLevelDB_leveldb_1iter_1new
+	(JNIEnv* jenv, jclass jcls, jlong handle, jbyteArray key, jint keylen, jint type)
+{
+	DB* db = (DB*)handle;
+	if(!db || type < 0 || type > 3) return 0;
+	Iterator* it = db->NewIterator(g_ro_nocached);
+	if(it)
+	{
+		if(!key || keylen <= 0)
+		{
+			if(type >= 2)
+				it->SeekToFirst();
+			else
+				it->SeekToLast();
+		}
+		else
+		{
+			jbyte* keyptr = jenv->GetByteArrayElements(key, 0);
+			if(!keyptr) { delete it; return 0; }
+			Slice slice((const char*)keyptr, (size_t)keylen);
+			it->Seek(slice);
+			if(it->Valid())
+			{
+				int comp = it->key().compare(slice);
+				if(comp == 0)
+				{
+					if(type == 0) it->Prev();
+					else if(type == 3) it->Next();
+				}
+				else // must be comp > 0
+					if(type <= 1) it->Prev();
+			}
+			else
+			{
+				if(type >= 2)
+					it->SeekToFirst();
+				else
+					it->SeekToLast();
+			}
+			jenv->ReleaseByteArrayElements(key, keyptr, JNI_ABORT);
+		}
+	}
+	return (jlong)it;
+}
+
+// public native static void leveldb_iter_delete(long iter);
+extern "C" JNIEXPORT void JNICALL Java_jane_core_StorageLevelDB_leveldb_1iter_1delete
+	(JNIEnv* jenv, jclass jcls, jlong iter)
+{
+	delete (Iterator*)iter;
+}
+
+// public native static byte[] leveldb_iter_next(long iter); // return cur-key (maybe null) and do next
+extern "C" JNIEXPORT jbyteArray JNICALL Java_jane_core_StorageLevelDB_leveldb_1iter_1next
+	(JNIEnv* jenv, jclass jcls, jlong iter)
+{
+	Iterator* it = (Iterator*)iter;
+	if(!it || !it->Valid()) return 0;
+	const Slice& slice = it->key();
+	jbyteArray key = jenv->NewByteArray(slice.size());
+	jenv->SetByteArrayRegion(key, 0, slice.size(), (const jbyte*)slice.data());
+	it->Next();
+	return key;
+}
+
+// public native static byte[] leveldb_iter_prev(long iter); // return cur-key (maybe null) and do prev
+extern "C" JNIEXPORT jbyteArray JNICALL Java_jane_core_StorageLevelDB_leveldb_1iter_1prev
+	(JNIEnv* jenv, jclass jcls, jlong iter)
+{
+	Iterator* it = (Iterator*)iter;
+	if(!it || !it->Valid()) return 0;
+	const Slice& slice = it->key();
+	jbyteArray key = jenv->NewByteArray(slice.size());
+	jenv->SetByteArrayRegion(key, 0, slice.size(), (const jbyte*)slice.data());
+	it->Prev();
+	return key;
+}
 
 #endif

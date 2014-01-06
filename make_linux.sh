@@ -10,7 +10,7 @@ TEST_FILES="util/testutil.cc util/testharness.cc"
 
 OBJ_FILES="builder.o c.o db_impl.o db_iter.o dbformat.o filename.o log_reader.o log_writer.o memtable.o repair.o table_cache.o version_edit.o version_set.o write_batch.o block.o block_builder.o filter_block.o format.o iterator.o merger.o table.o table_builder.o two_level_iterator.o arena.o bloom.o cache.o coding.o comparator.o crc32c.o env.o env_posix.o env_windows.o filter_policy.o hash.o histogram.o jni.o logging.o options.o status.o testutil.o testharness.o port_posix.o snappy.o snappy-sinksource.o snappy-stubs-internal.o"
 
-COMPILE="g++ -DOS_LINUX -DLEVELDB_PLATFORM_POSIX -DSNAPPY -DENABLE_JNI -DNDEBUG -I. -Iinclude -I${JAVA_HOME}/include -I${JAVA_HOME}/include/linux -O3 -ffast-math -fweb -fomit-frame-pointer -fmerge-all-constants -fno-builtin-memcmp -fPIC -pipe -pthread -s"
+COMPILE="g++ -DOS_LINUX -DLEVELDB_PLATFORM_POSIX -DSNAPPY -DENABLE_JNI -DNDEBUG -I. -Iinclude -Isnappy -I${JAVA_HOME}/include -I${JAVA_HOME}/include/linux -O3 -ffast-math -fweb -fomit-frame-pointer -fmerge-all-constants -fno-builtin-memcmp -fPIC -pipe -pthread -s"
 
 echo building libleveldbjni.so ...
 $COMPILE -shared -Wl,-soname -Wl,libleveldbjni.so -o libleveldbjni.so $CORE_FILES
