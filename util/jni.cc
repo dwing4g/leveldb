@@ -152,24 +152,44 @@ extern "C" JNIEXPORT jint JNICALL Java_jane_core_StorageLevelDB_leveldb_1write
 static int64_t AppendFile(Env& env, const std::string& srcfile, const std::string& dstfile, bool rewrite)
 {
 	uint64_t srcsize = 0, dstsize = 0;
+	SequentialFile* sf = 0;
+	Slice slice;
 	env.GetFileSize(srcfile, &srcsize);
 	env.GetFileSize(dstfile, &dstsize);
-	if(srcsize == dstsize || (srcsize < dstsize && !rewrite)) return 0;
-	if(rewrite) dstsize = 0;
-	SequentialFile* sf = 0;
-	if(!env.NewSequentialFile(srcfile, &sf).ok() || !sf) return -11;
-	if(!sf->Skip(dstsize).ok()) { delete sf; return -12; }
-	FILE* fp = fopen(dstfile.c_str(), (rewrite ? "wb" : "wb+"));
-	if(!fp) { delete sf; return -13; }
+	if(srcsize < dstsize) dstsize = 0;
+	else if(dstsize > 0) // compare 4k-head for more security
+	{
+		const size_t CHECKSIZE = 4096;
+		size_t checksize = (size_t)(dstsize < CHECKSIZE ? dstsize : CHECKSIZE);
+		char srcbuf[CHECKSIZE], dstbuf[CHECKSIZE];
+		if(!env.NewSequentialFile(srcfile, &sf).ok() || !sf) return -11;
+		if(!sf->Read(checksize, &slice, srcbuf).ok()) return -12;
+		if(slice.size() != checksize) return -13;
+		delete sf; sf = 0;
+		if(!env.NewSequentialFile(dstfile, &sf).ok() || !sf) return -14;
+		if(!sf->Read(checksize, &slice, dstbuf).ok()) return -15;
+		if(slice.size() != checksize) return -16;
+		delete sf; sf = 0;
+		if(memcmp(srcbuf, dstbuf, checksize)) dstsize = 0;
+		else
+		{
+			if(srcsize == dstsize) return 0;
+			if(rewrite) dstsize = 0;
+		}
+	}
+	if(!env.NewSequentialFile(srcfile, &sf).ok() || !sf) return -17;
+	if(dstsize > 0 && !sf->Skip(dstsize).ok()) { delete sf; return -18; }
+	FILE* fp = fopen(dstfile.c_str(), (dstsize == 0 ? "wb" : "wb+"));
+	if(!fp) { delete sf; return -19; }
 	fseek(fp, dstsize, SEEK_SET);
 	const size_t BUFSIZE = 65536;
-	Slice slice; Status s; size_t size; int64_t res = 0; char buf[BUFSIZE];
+	Status s; size_t size; int64_t res = 0; char buf[BUFSIZE];
 	do
 	{
 		s = sf->Read(BUFSIZE, &slice, buf);
 		size = slice.size();
 		if(size <= 0) break;
-		if(fwrite(buf, 1, size, fp) != size) { fclose(fp); delete sf; return -14; }
+		if(fwrite(buf, 1, size, fp) != size) { fclose(fp); delete sf; return -20; }
 		res += size;
 	}
 	while(s.ok());
@@ -206,14 +226,14 @@ extern "C" JNIEXPORT jlong JNICALL Java_jane_core_StorageLevelDB_leveldb_1backup
 	env->CreateDir(dstpathstr);
 	g_mutex_backup.Lock();
 	if(!env->GetChildren(srcpathstr, &files).ok()) { g_mutex_backup.Unlock(); return -6; }
-	if(handle)
+/*	if(handle)
 	{
 		dbi = (DBImpl*)handle;
-		VersionSet* vs = dbi->GetVersionSet();
+		VersionSet* vs = dbi->GetVersionSet(); // maybe not thread safe
 		if(vs) vs->AddLiveFiles(liveset = new std::set<uint64_t>);
 //		for(std::set<uint64_t>::const_iterator it = liveset->begin(); it != liveset->end(); ++it)
 //			printf("**** %06u\n", (int)*it);
-	}
+	}*/
 	for(std::vector<std::string>::const_iterator it = files.begin(), ie = files.end(); it != ie; ++it)
 	{
 		uint64_t num;
