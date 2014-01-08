@@ -15,6 +15,8 @@
 #include "leveldb/iterator.h"
 #include "port/port.h"
 #include "db/filename.h"
+#include "db/db_impl.h"
+#include "db/version_set.h"
 
 using namespace leveldb;
 
@@ -147,16 +149,17 @@ extern "C" JNIEXPORT jint JNICALL Java_jane_core_StorageLevelDB_leveldb_1write
 	return s.ok() ? 0 : 6;
 }
 
-static int64_t AppendFile(Env& env, const std::string& srcfile, const std::string& dstfile)
+static int64_t AppendFile(Env& env, const std::string& srcfile, const std::string& dstfile, bool rewrite)
 {
 	uint64_t srcsize = 0, dstsize = 0;
 	env.GetFileSize(srcfile, &srcsize);
 	env.GetFileSize(dstfile, &dstsize);
-	if(srcsize <= dstsize) return 0;
+	if(srcsize == dstsize || (srcsize < dstsize && !rewrite)) return 0;
+	if(rewrite) dstsize = 0;
 	SequentialFile* sf = 0;
 	if(!env.NewSequentialFile(srcfile, &sf).ok() || !sf) return -11;
 	if(!sf->Skip(dstsize).ok()) { delete sf; return -12; }
-	FILE* fp = fopen(dstfile.c_str(), "wb+");
+	FILE* fp = fopen(dstfile.c_str(), (rewrite ? "wb" : "wb+"));
 	if(!fp) { delete sf; return -13; }
 	fseek(fp, dstsize, SEEK_SET);
 	const size_t BUFSIZE = 65536;
@@ -175,9 +178,9 @@ static int64_t AppendFile(Env& env, const std::string& srcfile, const std::strin
 	return res;
 }
 
-// public native static long leveldb_backup(String srcpath, String dstpath, String datetime); // return byte-size of copied data
+// public native static long leveldb_backup(long handle, String srcpath, String dstpath, String datetime); // return byte-size of copied data
 extern "C" JNIEXPORT jlong JNICALL Java_jane_core_StorageLevelDB_leveldb_1backup
-	(JNIEnv* jenv, jclass jcls, jstring srcpath, jstring dstpath, jstring datetime)
+	(JNIEnv* jenv, jclass jcls, jlong handle, jstring srcpath, jstring dstpath, jstring datetime)
 {
 	if(!srcpath || !dstpath || !datetime) return -1;
 	Env* env = Env::Default();
@@ -197,32 +200,46 @@ extern "C" JNIEXPORT jlong JNICALL Java_jane_core_StorageLevelDB_leveldb_1backup
 
 	jlong n = 0;
 	std::vector<std::string> files;
+	DBImpl* dbi = 0;
+	std::set<uint64_t>* liveset = 0;
 	std::string files_saved;
 	env->CreateDir(dstpathstr);
 	g_mutex_backup.Lock();
 	if(!env->GetChildren(srcpathstr, &files).ok()) { g_mutex_backup.Unlock(); return -6; }
+	if(handle)
+	{
+		dbi = (DBImpl*)handle;
+		VersionSet* vs = dbi->GetVersionSet();
+		if(vs) vs->AddLiveFiles(liveset = new std::set<uint64_t>);
+//		for(std::set<uint64_t>::const_iterator it = liveset->begin(); it != liveset->end(); ++it)
+//			printf("**** %06u\n", (int)*it);
+	}
 	for(std::vector<std::string>::const_iterator it = files.begin(), ie = files.end(); it != ie; ++it)
 	{
 		uint64_t num;
 		FileType ft;
+		int64_t r = 0;
 		if(!ParseFileName(*it, &num, &ft)) continue;
 		if(ft == kTableFile || ft == kLogFile || ft == kDescriptorFile)
 		{
-			int64_t r = AppendFile(*env, srcpathstr + '/' + *it, dstpathstr + '/' + *it);
-			if(r > 0) n += r; // log error?
+			if(ft == kTableFile && liveset && liveset->find(num) == liveset->end()) continue;
+			r = AppendFile(*env, srcpathstr + '/' + *it, dstpathstr + '/' + *it, ft != kLogFile);
+			if(r > 0) n += r;
 			files_saved.append(*it);
 			files_saved.append("\n");
 		}
 		else if(ft == kCurrentFile)
 		{
-			int64_t r = AppendFile(*env, srcpathstr + '/' + *it, dstpathstr + '/' + *it + '-' + datetimestr);
-			if(r > 0) n += r; // log error?
+			r = AppendFile(*env, srcpathstr + '/' + *it, dstpathstr + '/' + *it + '-' + datetimestr, true);
+			if(r > 0) n += r;
 			files_saved.append(*it + '-' + datetimestr);
 			files_saved.append("\n");
 		}
 		// [optional] copy LOG file to backup dir and rename to LOG-[datetime]
+		if(r < 0 && dbi) Log(dbi->GetOptions().info_log, "leveldb_backup copy/append failed: r=%d,ft=%d,file=%s", (int)r, (int)ft, it->c_str());
 	}
 	g_mutex_backup.Unlock();
+	if(liveset) delete liveset;
 	WritableFile* wf = 0;
 	if(!env->NewWritableFile(dstpathstr + '/' + "BACKUP" + '-' + datetimestr, &wf).ok()) return -7;
 	if(!wf->Append(Slice(files_saved)).ok()) return -8;
