@@ -28,16 +28,16 @@ static WriteOptions			g_wo;			// safe for global shared instance
 static const FilterPolicy*	g_fp = 0;		// safe for global shared instance
 static WriteBatch			g_wb;			// optimized for single thread writing, fix it if concurrent writing
 
-// public native static long leveldb_open(String path, int write_bufsize, int cache_size);
+// public native static long leveldb_open(String path, int write_bufsize, int cache_size, boolean use_snappy);
 extern "C" JNIEXPORT jlong JNICALL Java_jane_core_StorageLevelDB_leveldb_1open
-	(JNIEnv* jenv, jclass jcls, jstring path, jint write_bufsize, jint cache_size)
+	(JNIEnv* jenv, jclass jcls, jstring path, jint write_bufsize, jint cache_size, jboolean use_snappy)
 {
 	if(!path) return 0;
 	Options opt;
 	opt.create_if_missing = true;
 	opt.write_buffer_size = (write_bufsize > 0x100000 ? write_bufsize : 0x100000);
 	opt.block_cache = NewLRUCache(cache_size > 0x100000 ? cache_size : 0x100000);
-	opt.compression = kSnappyCompression;
+	opt.compression = (use_snappy ? kSnappyCompression : kNoCompression);
 	opt.filter_policy = (g_fp ? g_fp : (g_fp = NewBloomFilterPolicy(10)));
 	g_ro_nocached.fill_cache = false;
 	g_wo.sync = true;

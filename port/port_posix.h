@@ -73,22 +73,25 @@
   {
     va_list vl;
     va_start(vl, fmt);
-    vprintf(cvt_fmt(fmt), vl);
+    int r = vprintf(cvt_fmt(fmt), vl);
     va_end(vl);
+    return r;
   }
   inline int fprintf_fix(FILE* fp, const char* fmt, ...)
   {
     va_list vl;
     va_start(vl, fmt);
-    vfprintf(fp, cvt_fmt(fmt), vl);
+    int r = vfprintf(fp, cvt_fmt(fmt), vl);
     va_end(vl);
+    return r;
   }
   inline int snprintf_fix(char* buf, size_t buflen, const char* fmt, ...)
   {
     va_list vl;
     va_start(vl, fmt);
-    _vsnprintf(buf, buflen, cvt_fmt(fmt), vl);
+    int r = _vsnprintf(buf, buflen, cvt_fmt(fmt), vl);
     va_end(vl);
+    return r;
   }
   #define printf printf_fix
   #define fprintf fprintf_fix

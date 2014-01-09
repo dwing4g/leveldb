@@ -6,6 +6,7 @@
 
 #define _WIN32_WINNT 0x500
 #include <windows.h>
+#include <stdio.h>
 #undef DeleteFile
 #undef min
 #include "leveldb/env.h"
@@ -156,6 +157,7 @@ public:
 		if(written < 0) written = kBufSize - 1;
 		buffer[written++] = '\n';
 		log_->Append(Slice(buffer, written));
+		log_->Flush();
 	}
 };
 
@@ -338,21 +340,17 @@ public:
 		return Status::OK();
 	}
 
-	static uint64_t gettid()
-	{
+	static uint64_t gettid() {
 		return GetCurrentThreadId();
 	}
 
 	// Create and return a log file for storing informational messages.
 	virtual Status NewLogger(const std::string& fname, Logger** result) {
 		FILE* fp = fopen(fname.c_str(), "wb");
-		if(!fp)
-		{
+		if(!fp) {
 			*result = 0;
 			return Status::IOError(fname, strerror(errno));
-		}
-		else
-		{
+		} else {
 			*result = new PosixLogger(fp, gettid);
 			return Status::OK();
 		}
