@@ -14,9 +14,11 @@
 #include "leveldb/filter_policy.h"
 #include "leveldb/iterator.h"
 #include "port/port.h"
-#include "db/filename.h"
 #include "db/db_impl.h"
+#include "db/filename.h"
 #include "db/version_set.h"
+#include "table/format.h"
+#include "util/coding.h"
 
 using namespace leveldb;
 
@@ -35,7 +37,7 @@ extern "C" JNIEXPORT jlong JNICALL Java_jane_core_StorageLevelDB_leveldb_1open
 	opt.create_if_missing = true;
 	opt.write_buffer_size = (write_bufsize > 0x100000 ? write_bufsize : 0x100000);
 	opt.block_cache = NewLRUCache(cache_size > 0x100000 ? cache_size : 0x100000);
-	opt.compression = kNoCompression;
+	opt.compression = kSnappyCompression;
 	opt.filter_policy = (g_fp ? g_fp : (g_fp = NewBloomFilterPolicy(10)));
 	g_ro_nocached.fill_cache = false;
 	g_wo.sync = true;
@@ -149,47 +151,52 @@ extern "C" JNIEXPORT jint JNICALL Java_jane_core_StorageLevelDB_leveldb_1write
 	return s.ok() ? 0 : 6;
 }
 
-static int64_t AppendFile(Env& env, const std::string& srcfile, const std::string& dstfile, bool rewrite)
+static int64_t AppendFile(Env& env, const std::string& srcfile, const std::string& dstfile, bool checkmagic)
 {
 	uint64_t srcsize = 0, dstsize = 0;
 	SequentialFile* sf = 0;
 	Slice slice;
+	const size_t BUFSIZE = 65536;
+	char buf[BUFSIZE];
 	env.GetFileSize(srcfile, &srcsize);
 	env.GetFileSize(dstfile, &dstsize);
-	if(srcsize < dstsize) dstsize = 0;
-	else if(dstsize > 0) // compare 4k-head for more security
+	if(checkmagic)
 	{
-		const size_t CHECKSIZE = 4096;
-		size_t checksize = (size_t)(dstsize < CHECKSIZE ? dstsize : CHECKSIZE);
-		char srcbuf[CHECKSIZE], dstbuf[CHECKSIZE];
-		if(!env.NewSequentialFile(srcfile, &sf).ok() || !sf) return -11;
-		if(!sf->Read(checksize, &slice, srcbuf).ok()) return -12;
-		if(slice.size() != checksize) return -13;
-		delete sf; sf = 0;
-		if(!env.NewSequentialFile(dstfile, &sf).ok() || !sf) return -14;
-		if(!sf->Read(checksize, &slice, dstbuf).ok()) return -15;
-		if(slice.size() != checksize) return -16;
-		delete sf; sf = 0;
-		if(memcmp(srcbuf, dstbuf, checksize)) dstsize = 0;
-		else
-		{
-			if(srcsize == dstsize) return 0;
-			if(rewrite) dstsize = 0;
-		}
+		if(srcsize < 8) return -11;
+		RandomAccessFile* raf = 0;
+		if(!env.NewRandomAccessFile(srcfile, &raf).ok() || !raf) return -12;
+		if(!raf->Read(srcsize - 8, 8, &slice, buf).ok() || slice.size() != 8) { delete raf; return -13; }
+		delete raf;
+		uint32_t magic_lo = DecodeFixed32(buf);
+		uint32_t magic_hi = DecodeFixed32(buf + 4);
+		if(((uint64_t)magic_hi << 32) + magic_lo != kTableMagicNumber) return -14;
 	}
-	if(!env.NewSequentialFile(srcfile, &sf).ok() || !sf) return -17;
-	if(dstsize > 0 && !sf->Skip(dstsize).ok()) { delete sf; return -18; }
+	if(srcsize < dstsize) dstsize = 0; // overwrite
+	else if(dstsize > 0) // compare file head for more security
+	{
+		size_t checksize = (size_t)(dstsize < BUFSIZE ? dstsize : BUFSIZE);
+		char dstbuf[BUFSIZE];
+		if(!env.NewSequentialFile(srcfile, &sf).ok() || !sf) return -15;
+		if(!sf->Read(checksize, &slice, buf).ok() || slice.size() != checksize) return -16;
+		delete sf; sf = 0;
+		if(!env.NewSequentialFile(dstfile, &sf).ok() || !sf) return -17;
+		if(!sf->Read(checksize, &slice, dstbuf).ok() || slice.size() != checksize) return -18;
+		delete sf; sf = 0;
+		if(memcmp(buf, dstbuf, checksize)) dstsize = 0; // overwrite
+		else if(srcsize == dstsize) return 0;
+	}
+	if(!env.NewSequentialFile(srcfile, &sf).ok() || !sf) return -19;
+	if(dstsize > 0 && !sf->Skip(dstsize).ok()) { delete sf; return -20; }
 	FILE* fp = fopen(dstfile.c_str(), (dstsize == 0 ? "wb" : "wb+"));
-	if(!fp) { delete sf; return -19; }
+	if(!fp) { delete sf; return -21; }
 	fseek(fp, dstsize, SEEK_SET);
-	const size_t BUFSIZE = 65536;
-	Status s; size_t size; int64_t res = 0; char buf[BUFSIZE];
+	Status s; size_t size; int64_t res = 0;
 	do
 	{
 		s = sf->Read(BUFSIZE, &slice, buf);
 		size = slice.size();
 		if(size <= 0) break;
-		if(fwrite(buf, 1, size, fp) != size) { fclose(fp); delete sf; return -20; }
+		if(fwrite(buf, 1, size, fp) != size) { fclose(fp); delete sf; return -22; }
 		res += size;
 	}
 	while(s.ok());
@@ -243,20 +250,20 @@ extern "C" JNIEXPORT jlong JNICALL Java_jane_core_StorageLevelDB_leveldb_1backup
 		if(ft == kTableFile || ft == kLogFile || ft == kDescriptorFile)
 		{
 			if(ft == kTableFile && liveset && liveset->find(num) == liveset->end()) continue;
-			r = AppendFile(*env, srcpathstr + '/' + *it, dstpathstr + '/' + *it, ft != kLogFile);
+			r = AppendFile(*env, srcpathstr + '/' + *it, dstpathstr + '/' + *it, ft == kTableFile);
 			if(r > 0) n += r;
 			files_saved.append(*it);
 			files_saved.append("\n");
 		}
 		else if(ft == kCurrentFile)
 		{
-			r = AppendFile(*env, srcpathstr + '/' + *it, dstpathstr + '/' + *it + '-' + datetimestr, true);
+			r = AppendFile(*env, srcpathstr + '/' + *it, dstpathstr + '/' + *it + '-' + datetimestr, false);
 			if(r > 0) n += r;
 			files_saved.append(*it + '-' + datetimestr);
 			files_saved.append("\n");
 		}
 		// [optional] copy LOG file to backup dir and rename to LOG-[datetime]
-		if(r < 0 && dbi) Log(dbi->GetOptions().info_log, "leveldb_backup copy/append failed: r=%d,ft=%d,file=%s", (int)r, (int)ft, it->c_str());
+		if(r < 0 && dbi) Log(dbi->GetOptions().info_log, "leveldb_backup copy/append failed: r=%d,ft=%d,file='%s'", (int)r, (int)ft, it->c_str());
 	}
 	g_mutex_backup.Unlock();
 	if(liveset) delete liveset;

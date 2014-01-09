@@ -55,7 +55,7 @@
         strcpy(d, p);
         return s_buf;
       }
-      if(q[2] == 'd' || q[2] == 'u')
+      if(q[2] == 'd' || q[2] == 'u' || q[2] == 'x')
       {
         int n = q - p;
         memcpy(d, p, n); d += n;

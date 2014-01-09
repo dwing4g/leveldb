@@ -9,7 +9,9 @@
 #undef DeleteFile
 #undef min
 #include "leveldb/env.h"
+#include "leveldb/status.h"
 #include "port/port.h"
+#include "util/posix_logger.h"
 
 namespace leveldb {
 
@@ -150,9 +152,10 @@ public:
 	virtual void Logv(const char* format, va_list ap) {
 		const size_t kBufSize = 4096;
 		char buffer[kBufSize];
-		int written = _vsnprintf(buffer, kBufSize, cvt_fmt(format), ap);
-		log_->Append(Slice(buffer, written >= 0 ? written : kBufSize));
-		log_->Append(Slice("\n", 1));
+		int written = _vsnprintf(buffer, kBufSize - 1, cvt_fmt(format), ap);
+		if(written < 0) written = kBufSize - 1;
+		buffer[written++] = '\n';
+		log_->Append(Slice(buffer, written));
 	}
 };
 
@@ -335,13 +338,29 @@ public:
 		return Status::OK();
 	}
 
+	static uint64_t gettid()
+	{
+		return GetCurrentThreadId();
+	}
+
 	// Create and return a log file for storing informational messages.
 	virtual Status NewLogger(const std::string& fname, Logger** result) {
-		*result = 0;
+		FILE* fp = fopen(fname.c_str(), "wb");
+		if(!fp)
+		{
+			*result = 0;
+			return Status::IOError(fname, strerror(errno));
+		}
+		else
+		{
+			*result = new PosixLogger(fp, gettid);
+			return Status::OK();
+		}
+/*		*result = 0;
 		WritableFile* logfile;
 		Status status = NewWritableFile(fname, &logfile);
 		if(status.ok()) *result = new WindowsLogger(logfile);
-		return status;
+		return status;*/
 	}
 
 	// Returns the number of micro-seconds since some fixed point in time. Only
