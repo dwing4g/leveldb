@@ -22,6 +22,11 @@
 
 using namespace leveldb;
 
+static const jint	WRITE_BUFSIZE_MIN	= 1 << 20;
+static const jint	CACHE_SIZE_MIN		= 1 << 20;
+static const int	BLOOM_FILTER_BITS	= 10;
+static const size_t	FILE_BUF_SIZE		= 1 << 16;
+
 static ReadOptions			g_ro_cached;	// safe for global shared instance
 static ReadOptions			g_ro_nocached;	// safe for global shared instance
 static WriteOptions			g_wo;			// safe for global shared instance
@@ -33,18 +38,20 @@ extern "C" JNIEXPORT jlong JNICALL Java_jane_core_StorageLevelDB_leveldb_1open
 	(JNIEnv* jenv, jclass jcls, jstring path, jint write_bufsize, jint cache_size, jboolean use_snappy)
 {
 	if(!path) return 0;
+	const char* pathptr = jenv->GetStringUTFChars(path, 0);
+	if(!pathptr) return 0;
+	std::string pathstr(pathptr);
+	jenv->ReleaseStringUTFChars(path, pathptr);
 	Options opt;
 	opt.create_if_missing = true;
-	opt.write_buffer_size = (write_bufsize > 0x100000 ? write_bufsize : 0x100000);
-	opt.block_cache = NewLRUCache(cache_size > 0x100000 ? cache_size : 0x100000);
+	opt.write_buffer_size = (write_bufsize > WRITE_BUFSIZE_MIN ? write_bufsize : WRITE_BUFSIZE_MIN);
+	opt.block_cache = NewLRUCache(cache_size > CACHE_SIZE_MIN ? cache_size : CACHE_SIZE_MIN);
 	opt.compression = (use_snappy ? kSnappyCompression : kNoCompression);
-	opt.filter_policy = (g_fp ? g_fp : (g_fp = NewBloomFilterPolicy(10)));
+	opt.filter_policy = (g_fp ? g_fp : (g_fp = NewBloomFilterPolicy(BLOOM_FILTER_BITS)));
 	g_ro_nocached.fill_cache = false;
 	g_wo.sync = true;
-	const char* pathptr = jenv->GetStringUTFChars(path, 0);
 	DB* db = 0;
-	Status s = DB::Open(opt, pathptr, &db);
-	jenv->ReleaseStringUTFChars(path, pathptr);
+	Status s = DB::Open(opt, pathstr, &db);
 	return s.ok() ? (jlong)db : 0;
 }
 
@@ -52,7 +59,14 @@ extern "C" JNIEXPORT jlong JNICALL Java_jane_core_StorageLevelDB_leveldb_1open
 extern "C" JNIEXPORT void JNICALL Java_jane_core_StorageLevelDB_leveldb_1close
 	(JNIEnv* jenv, jclass jcls, jlong handle)
 {
-	delete (DB*)handle;
+	if(handle)
+	{
+		DB* db = (DBImpl*)handle;
+		DBImpl* dbi = dynamic_cast<DBImpl*>(db);
+		Cache* cache = (dbi ? dbi->GetOptions().block_cache : 0);
+		delete db;
+		if(cache) delete cache;
+	}
 }
 
 // public native static byte[] leveldb_get(long handle, byte[] key, int keylen); // return null for not found
@@ -84,8 +98,6 @@ extern "C" JNIEXPORT jint JNICALL Java_jane_core_StorageLevelDB_leveldb_1write
 	if(!db || !it) return 1;
 	jclass cls_it = jenv->FindClass("java/util/Iterator");
 	if(!cls_it) return 2;
-	static jclass cls_entry = 0;
-	static jclass cls_octets = 0;
 	static jmethodID mid_hasNext = 0;
 	static jmethodID mid_next = 0;
 	static jmethodID mid_getKey = 0;
@@ -115,9 +127,9 @@ extern "C" JNIEXPORT jint JNICALL Java_jane_core_StorageLevelDB_leveldb_1write
 		jobject key = jenv->CallObjectMethod(entry, mid_getKey);
 		if(key)
 		{
-			jbyteArray keybuf = (jbyteArray)jenv->GetObjectField(key, fid_buffer); // check cast and null?
+			jbyteArray keybuf = (jbyteArray)jenv->GetObjectField(key, fid_buffer); // check cast?
 			jint keylen = jenv->GetIntField(key, fid_count);
-			if(keylen > 0)
+			if(keybuf && keylen > 0)
 			{
 				jbyte* keyptr = jenv->GetByteArrayElements(keybuf, 0);
 				if(keyptr)
@@ -125,9 +137,9 @@ extern "C" JNIEXPORT jint JNICALL Java_jane_core_StorageLevelDB_leveldb_1write
 					jobject val = jenv->CallObjectMethod(entry, mid_getValue);
 					if(val)
 					{
-						jbyteArray valbuf = (jbyteArray)jenv->GetObjectField(val, fid_buffer); // check cast and null?
+						jbyteArray valbuf = (jbyteArray)jenv->GetObjectField(val, fid_buffer); // check cast?
 						jint vallen = jenv->GetIntField(val, fid_count);
-						if(vallen > 0)
+						if(valbuf && vallen > 0)
 						{
 							jbyte* valptr = jenv->GetByteArrayElements(valbuf, 0);
 							if(valptr)
@@ -156,8 +168,7 @@ static int64_t AppendFile(Env& env, const std::string& srcfile, const std::strin
 	uint64_t srcsize = 0, dstsize = 0;
 	SequentialFile* sf = 0;
 	Slice slice;
-	const size_t BUFSIZE = 65536;
-	char buf[BUFSIZE];
+	char buf[FILE_BUF_SIZE];
 	env.GetFileSize(srcfile, &srcsize);
 	env.GetFileSize(dstfile, &dstsize);
 	if(checkmagic)
@@ -174,13 +185,13 @@ static int64_t AppendFile(Env& env, const std::string& srcfile, const std::strin
 	if(srcsize < dstsize) dstsize = 0; // overwrite
 	else if(dstsize > 0) // compare file head for more security
 	{
-		size_t checksize = (size_t)(dstsize < BUFSIZE ? dstsize : BUFSIZE);
-		char dstbuf[BUFSIZE];
+		size_t checksize = (size_t)(dstsize < FILE_BUF_SIZE ? dstsize : FILE_BUF_SIZE);
+		char dstbuf[FILE_BUF_SIZE];
 		if(!env.NewSequentialFile(srcfile, &sf).ok() || !sf) return -15;
-		if(!sf->Read(checksize, &slice, buf).ok() || slice.size() != checksize) return -16;
+		if(!sf->Read(checksize, &slice, buf).ok() || slice.size() != checksize) { delete sf; return -16; }
 		delete sf; sf = 0;
 		if(!env.NewSequentialFile(dstfile, &sf).ok() || !sf) return -17;
-		if(!sf->Read(checksize, &slice, dstbuf).ok() || slice.size() != checksize) return -18;
+		if(!sf->Read(checksize, &slice, dstbuf).ok() || slice.size() != checksize) { delete sf; return -18; }
 		delete sf; sf = 0;
 		if(memcmp(buf, dstbuf, checksize)) dstsize = 0; // overwrite
 		else if(srcsize == dstsize) return 0;
@@ -193,7 +204,7 @@ static int64_t AppendFile(Env& env, const std::string& srcfile, const std::strin
 	Status s; size_t size; int64_t res = 0;
 	do
 	{
-		s = sf->Read(BUFSIZE, &slice, buf);
+		s = sf->Read(FILE_BUF_SIZE, &slice, buf);
 		size = slice.size();
 		if(size <= 0) break;
 		if(fwrite(buf, 1, size, fp) != size) { fclose(fp); delete sf; return -22; }
@@ -233,14 +244,14 @@ extern "C" JNIEXPORT jlong JNICALL Java_jane_core_StorageLevelDB_leveldb_1backup
 	env->CreateDir(dstpathstr);
 	g_mutex_backup.Lock();
 	if(!env->GetChildren(srcpathstr, &files).ok()) { g_mutex_backup.Unlock(); return -6; }
-/*	if(handle)
+	if(handle)
 	{
-		dbi = (DBImpl*)handle;
-		VersionSet* vs = dbi->GetVersionSet(); // maybe not thread safe
-		if(vs) vs->AddLiveFiles(liveset = new std::set<uint64_t>);
+		dbi = dynamic_cast<DBImpl*>((DB*)handle);
+//		VersionSet* vs = dbi->GetVersionSet(); // maybe not thread safe
+//		if(vs) vs->AddLiveFiles(liveset = new std::set<uint64_t>);
 //		for(std::set<uint64_t>::const_iterator it = liveset->begin(); it != liveset->end(); ++it)
 //			printf("**** %06u\n", (int)*it);
-	}*/
+	}
 	for(std::vector<std::string>::const_iterator it = files.begin(), ie = files.end(); it != ie; ++it)
 	{
 		uint64_t num;
@@ -268,9 +279,9 @@ extern "C" JNIEXPORT jlong JNICALL Java_jane_core_StorageLevelDB_leveldb_1backup
 	g_mutex_backup.Unlock();
 	if(liveset) delete liveset;
 	WritableFile* wf = 0;
-	if(!env->NewWritableFile(dstpathstr + '/' + "BACKUP" + '-' + datetimestr, &wf).ok()) return -7;
-	if(!wf->Append(Slice(files_saved)).ok()) return -8;
-	if(!wf->Sync().ok()) return -9;
+	if(!env->NewWritableFile(dstpathstr + '/' + "BACKUP" + '-' + datetimestr, &wf).ok() || !wf) return -7;
+	if(!wf->Append(Slice(files_saved)).ok()) { delete wf; return -8; }
+	if(!wf->Sync().ok()) { delete wf; return -9; }
 	wf->Close();
 	delete wf;
 	return n;
