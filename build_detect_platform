@@ -82,8 +82,7 @@ case "$TARGET_OS" in
         ;;
     Linux)
         PLATFORM=OS_LINUX
-#       COMMON_FLAGS="$MEMCMP_FLAG -pthread -DOS_LINUX"
-        COMMON_FLAGS="$MEMCMP_FLAG -pthread -DOS_LINUX -DENABLE_JNI -I/usr/java/default/include -I/usr/java/default/include/linux"
+        COMMON_FLAGS="$MEMCMP_FLAG -pthread -DOS_LINUX"
         PLATFORM_LDFLAGS="-pthread"
         PORT_FILE=port/port_posix.cc
         ;;
@@ -139,17 +138,6 @@ case "$TARGET_OS" in
         PORT_FILE=port/port_posix.cc
         PLATFORM_SHARED_EXT=
         PLATFORM_SHARED_LDFLAGS=
-        PLATFORM_SHARED_CFLAGS=
-        PLATFORM_SHARED_VERSIONED=
-        ;;
-    MINGW*)
-        PLATFORM=OS_LINUX
-#       COMMON_FLAGS="$MEMCMP_FLAG -pthread -DOS_LINUX -DOS_MINGW"
-#       PLATFORM_LDFLAGS="-lpthread -static -s"
-        COMMON_FLAGS="$MEMCMP_FLAG -pthread -DOS_LINUX -DOS_MINGW -DENABLE_JNI -I\"${JAVA_HOME}/include\" -I\"${JAVA_HOME}/include/win64\" -I\"${JAVA_HOME}/include/win32\""
-        PLATFORM_LDFLAGS="-lpthread -static -s -Wl,--kill-at"
-        PORT_FILE=port/port_posix.cc
-        PLATFORM_SHARED_EXT="dll"
         PLATFORM_SHARED_CFLAGS=
         PLATFORM_SHARED_VERSIONED=
         ;;
