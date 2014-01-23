@@ -179,37 +179,38 @@ static int64_t AppendFile(Env& env, const std::string& srcfile, const std::strin
 		RandomAccessFile* raf = 0;
 		if(!env.NewRandomAccessFile(srcfile, &raf).ok() || !raf) return -12;
 		if(!raf->Read(srcsize - 8, 8, &slice, buf).ok() || slice.size() != 8) { delete raf; return -13; }
+		uint32_t magic_lo = DecodeFixed32(slice.data());
+		uint32_t magic_hi = DecodeFixed32(slice.data() + 4);
 		delete raf;
-		uint32_t magic_lo = DecodeFixed32(buf);
-		uint32_t magic_hi = DecodeFixed32(buf + 4);
 		if(((uint64_t)magic_hi << 32) + magic_lo != kTableMagicNumber) return -14;
 	}
 	if(srcsize < dstsize) dstsize = 0; // overwrite
 	else if(dstsize > 0) // compare file head for more security
 	{
 		size_t checksize = (size_t)(dstsize < FILE_BUF_SIZE ? dstsize : FILE_BUF_SIZE);
+		Slice dstslice;
 		char dstbuf[FILE_BUF_SIZE];
 		if(!env.NewSequentialFile(srcfile, &sf).ok() || !sf) return -15;
 		if(!sf->Read(checksize, &slice, buf).ok() || slice.size() != checksize) { delete sf; return -16; }
 		delete sf; sf = 0;
 		if(!env.NewSequentialFile(dstfile, &sf).ok() || !sf) return -17;
-		if(!sf->Read(checksize, &slice, dstbuf).ok() || slice.size() != checksize) { delete sf; return -18; }
+		if(!sf->Read(checksize, &dstslice, dstbuf).ok() || dstslice.size() != checksize) { delete sf; return -18; }
 		delete sf; sf = 0;
-		if(memcmp(buf, dstbuf, checksize)) dstsize = 0; // overwrite
+		if(memcmp(slice.data(), dstslice.data(), checksize)) dstsize = 0; // overwrite
 		else if(srcsize == dstsize) return 0;
 	}
 	if(!env.NewSequentialFile(srcfile, &sf).ok() || !sf) return -19;
 	if(dstsize > 0 && !sf->Skip(dstsize).ok()) { delete sf; return -20; }
 	FILE* fp = fopen(dstfile.c_str(), (dstsize == 0 ? "wb" : "wb+"));
 	if(!fp) { delete sf; return -21; }
-	fseek(fp, dstsize, SEEK_SET);
+	if(dstsize > 0) fseek(fp, dstsize, SEEK_SET);
 	Status s; size_t size; int64_t res = 0;
 	do
 	{
 		s = sf->Read(FILE_BUF_SIZE, &slice, buf);
 		size = slice.size();
 		if(size <= 0) break;
-		if(fwrite(buf, 1, size, fp) != size) { fclose(fp); delete sf; return -22; }
+		if(fwrite(slice.data(), 1, size, fp) != size) { fclose(fp); delete sf; return -22; }
 		res += size;
 	}
 	while(s.ok());
