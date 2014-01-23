@@ -33,6 +33,8 @@ static WriteOptions			g_wo;			// safe for global shared instance
 static const FilterPolicy*	g_fp = 0;		// safe for global shared instance
 static WriteBatch			g_wb;			// optimized for single thread writing, fix it if concurrent writing
 
+namespace leveldb { extern port::Mutex g_mutex_backup; }
+
 // public native static long leveldb_open(String path, int write_bufsize, int cache_size, boolean use_snappy);
 extern "C" JNIEXPORT jlong JNICALL Java_jane_core_StorageLevelDB_leveldb_1open
 	(JNIEnv* jenv, jclass jcls, jstring path, jint write_bufsize, jint cache_size, jboolean use_snappy)

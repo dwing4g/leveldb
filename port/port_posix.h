@@ -37,8 +37,6 @@
   // See http://code.google.com/p/android/issues/detail?id=39824
   #include <endian.h>
   #define PLATFORM_IS_LITTLE_ENDIAN  (_BYTE_ORDER == _LITTLE_ENDIAN)
-#elif defined(WIN32)
-  #define PLATFORM_IS_LITTLE_ENDIAN true
 #else
   #include <endian.h>
 #endif
@@ -154,9 +152,6 @@ inline bool GetHeapProfile(void (*func)(void*, const char*, int), void* arg) {
 }
 
 } // namespace port
-
-extern port::Mutex g_mutex_backup;
-
 } // namespace leveldb
 
 #endif  // STORAGE_LEVELDB_PORT_PORT_POSIX_H_

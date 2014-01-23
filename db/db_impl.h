@@ -64,7 +64,7 @@ class DBImpl : public DB {
   // bytes.
   void RecordReadSample(Slice key);
 
-  VersionSet* GetVersionSet() { return versions_; }
+  // VersionSet* GetVersionSet() { return versions_; }
   const Options& GetOptions() { return options_; }
 
  private:
