@@ -98,8 +98,9 @@ extern "C" JNIEXPORT jint JNICALL Java_jane_core_StorageLevelDB_leveldb_1write
 {
 	DB* db = (DB*)handle;
 	if(!db || !it) return 1;
-	jclass cls_it = jenv->FindClass("java/util/Iterator");
-	if(!cls_it) return 2;
+	static jclass cls_it = 0;
+	static jclass cls_entry = 0;
+	static jclass cls_octets = 0;
 	static jmethodID mid_hasNext = 0;
 	static jmethodID mid_next = 0;
 	static jmethodID mid_getKey = 0;
@@ -109,20 +110,24 @@ extern "C" JNIEXPORT jint JNICALL Java_jane_core_StorageLevelDB_leveldb_1write
 	static jint s_err = -1;
 	if(s_err < 0)
 	{
-		s_err = 0;
-		jclass cls_entry = jenv->FindClass("java/util/Map$Entry");
-		jclass cls_octets = jenv->FindClass("jane/core/Octets");
-		if(!cls_entry || !cls_octets) return s_err = 3;
+		cls_it = jenv->FindClass("java/util/Iterator");
+		cls_entry = jenv->FindClass("java/util/Map$Entry");
+		cls_octets = jenv->FindClass("jane/core/Octets");
+		if(!cls_it || !cls_entry || !cls_octets) return s_err = 2;
+		cls_it = (jclass)jenv->NewGlobalRef(cls_it);
+		cls_entry = (jclass)jenv->NewGlobalRef(cls_entry);
+		cls_octets = (jclass)jenv->NewGlobalRef(cls_octets);
 		mid_hasNext = jenv->GetMethodID(cls_it, "hasNext", "()Z");
 		mid_next = jenv->GetMethodID(cls_it, "next", "()Ljava/lang/Object;");
 		mid_getKey = jenv->GetMethodID(cls_entry, "getKey", "()Ljava/lang/Object;");
 		mid_getValue = jenv->GetMethodID(cls_entry, "getValue", "()Ljava/lang/Object;");
 		fid_buffer = jenv->GetFieldID(cls_octets, "buffer", "[B");
 		fid_count = jenv->GetFieldID(cls_octets, "count", "I");
-		if(!mid_hasNext || !mid_next || !mid_getKey || !mid_getValue || !fid_buffer || !fid_count) return s_err = 4;
+		if(!mid_hasNext || !mid_next || !mid_getKey || !mid_getValue || !fid_buffer || !fid_count) return s_err = 3;
+		s_err = 0;
 	}
 	else if(s_err > 0) return s_err;
-	if(jenv->IsInstanceOf(it, cls_it) == JNI_FALSE) return 5;
+	if(jenv->IsInstanceOf(it, cls_it) == JNI_FALSE) return 4;
 	while(jenv->CallBooleanMethod(it, mid_hasNext) == JNI_TRUE)
 	{
 		jobject entry = jenv->CallObjectMethod(it, mid_next);
@@ -162,7 +167,7 @@ extern "C" JNIEXPORT jint JNICALL Java_jane_core_StorageLevelDB_leveldb_1write
 	}
 	Status s = db->Write(g_wo, &g_wb);
 	g_wb.Clear();
-	return s.ok() ? 0 : 6;
+	return s.ok() ? 0 : 5;
 }
 
 static int64_t AppendFile(Env& env, const std::string& srcfile, const std::string& dstfile, bool checkmagic)
