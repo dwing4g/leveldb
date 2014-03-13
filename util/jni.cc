@@ -27,11 +27,10 @@ static const jint	CACHE_SIZE_MIN		= 1 << 20;
 static const int	BLOOM_FILTER_BITS	= 10;
 static const size_t	FILE_BUF_SIZE		= 1 << 16;
 
-static ReadOptions			g_ro_cached;	// safe for global shared instance
+static const ReadOptions	g_ro_cached;	// safe for global shared instance
 static ReadOptions			g_ro_nocached;	// safe for global shared instance
-static WriteOptions			g_wo;			// safe for global shared instance
+static WriteOptions			g_wo_sync;		// safe for global shared instance
 static const FilterPolicy*	g_fp = 0;		// safe for global shared instance
-static WriteBatch			g_wb;			// optimized for single thread writing, fix it if concurrent writing
 
 namespace leveldb { extern port::Mutex g_mutex_backup; }
 
@@ -51,7 +50,7 @@ extern "C" JNIEXPORT jlong JNICALL Java_jane_core_StorageLevelDB_leveldb_1open
 	opt.compression = (use_snappy ? kSnappyCompression : kNoCompression);
 	opt.filter_policy = (g_fp ? g_fp : (g_fp = NewBloomFilterPolicy(BLOOM_FILTER_BITS)));
 	g_ro_nocached.fill_cache = false;
-	g_wo.sync = true;
+	g_wo_sync.sync = true;
 	DB* db = 0;
 	Status s = DB::Open(opt, pathstr, &db);
 	return s.ok() ? (jlong)db : 0;
@@ -128,6 +127,7 @@ extern "C" JNIEXPORT jint JNICALL Java_jane_core_StorageLevelDB_leveldb_1write
 	}
 	else if(s_err > 0) return s_err;
 	if(jenv->IsInstanceOf(it, cls_it) == JNI_FALSE) return 4;
+	WriteBatch wb;
 	while(jenv->CallBooleanMethod(it, mid_hasNext) == JNI_TRUE)
 	{
 		jobject entry = jenv->CallObjectMethod(it, mid_next);
@@ -151,23 +151,21 @@ extern "C" JNIEXPORT jint JNICALL Java_jane_core_StorageLevelDB_leveldb_1write
 							jbyte* valptr = jenv->GetByteArrayElements(valbuf, 0);
 							if(valptr)
 							{
-								g_wb.Put(Slice((const char*)keyptr, (size_t)keylen), Slice((const char*)valptr, (size_t)vallen));
+								wb.Put(Slice((const char*)keyptr, (size_t)keylen), Slice((const char*)valptr, (size_t)vallen));
 								jenv->ReleaseByteArrayElements(valbuf, valptr, JNI_ABORT);
 							}
 						}
 						else
-							g_wb.Delete(Slice((const char*)keyptr, (size_t)keylen));
+							wb.Delete(Slice((const char*)keyptr, (size_t)keylen));
 					}
 					else
-						g_wb.Delete(Slice((const char*)keyptr, (size_t)keylen));
+						wb.Delete(Slice((const char*)keyptr, (size_t)keylen));
 					jenv->ReleaseByteArrayElements(keybuf, keyptr, JNI_ABORT);
 				}
 			}
 		}
 	}
-	Status s = db->Write(g_wo, &g_wb);
-	g_wb.Clear();
-	return s.ok() ? 0 : 5;
+	return db->Write(g_wo_sync, &wb).ok() ? 0 : 5;
 }
 
 static int64_t AppendFile(Env& env, const std::string& srcfile, const std::string& dstfile, bool checkmagic)
