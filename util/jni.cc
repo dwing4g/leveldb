@@ -120,8 +120,8 @@ extern "C" JNIEXPORT jint JNICALL Java_jane_core_StorageLevelDB_leveldb_1write
 		mid_next = jenv->GetMethodID(cls_it, "next", "()Ljava/lang/Object;");
 		mid_getKey = jenv->GetMethodID(cls_entry, "getKey", "()Ljava/lang/Object;");
 		mid_getValue = jenv->GetMethodID(cls_entry, "getValue", "()Ljava/lang/Object;");
-		fid_buffer = jenv->GetFieldID(cls_octets, "buffer", "[B");
-		fid_count = jenv->GetFieldID(cls_octets, "count", "I");
+		fid_buffer = jenv->GetFieldID(cls_octets, "_buffer", "[B");
+		fid_count = jenv->GetFieldID(cls_octets, "_count", "I");
 		if(!mid_hasNext || !mid_next || !mid_getKey || !mid_getValue || !fid_buffer || !fid_count) return s_err = 3;
 		s_err = 0;
 	}

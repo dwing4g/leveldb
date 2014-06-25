@@ -17,14 +17,9 @@ set COMPILE=g++ -DOS_LINUX -DLEVELDB_PLATFORM_POSIX -DSNAPPY -DENABLE_JNI -D_POS
 echo building leveldbjni.dll ...
 %COMPILE% -shared -Wl,--image-base,0x10000000 -Wl,--kill-at -Wl,-soname -Wl,leveldbjni.dll -o leveldbjni.dll %CORE_FILES%
 
-echo building leveldb.a ...
-%COMPILE% -c %CORE_FILES% %TEST_FILES%
-ar -rs leveldb.a %OBJ_FILES%
-del *.o 2>nul
-
 echo building db-tools ...
-%COMPILE% -o db_bench.exe     db/db_bench.cc     leveldb.a
-%COMPILE% -o db_test.exe      db/db_test.cc      leveldb.a
-%COMPILE% -o leveldb_main.exe db/leveldb_main.cc leveldb.a
+%COMPILE% -o db_bench.exe     db/db_bench.cc     %CORE_FILES% %TEST_FILES%
+%COMPILE% -o db_test.exe      db/db_test.cc      %CORE_FILES% %TEST_FILES%
+%COMPILE% -o leveldb_main.exe db/leveldb_main.cc %CORE_FILES% %TEST_FILES%
 
 pause
