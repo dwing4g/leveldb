@@ -204,7 +204,7 @@ static int64_t AppendFile(Env& env, const std::string& srcfile, const std::strin
 	}
 	if(!env.NewSequentialFile(srcfile, &sf).ok() || !sf) return -19;
 	if(dstsize > 0 && !sf->Skip(dstsize).ok()) { delete sf; return -20; }
-	FILE* fp = fopen(dstfile.c_str(), (dstsize == 0 ? "wb" : "wb+"));
+	FILE* fp = fopen(dstfile.c_str(), (dstsize == 0 ? "wb" : "rb+"));
 	if(!fp) { delete sf; return -21; }
 	if(dstsize > 0) fseek(fp, dstsize, SEEK_SET);
 	Status s; size_t size; int64_t res = 0;
