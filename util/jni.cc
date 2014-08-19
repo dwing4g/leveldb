@@ -5,6 +5,7 @@
 #ifdef ENABLE_JNI
 
 #include <stdio.h>
+#include <sstream>
 #include <jni.h>
 #include "leveldb/db.h"
 #include "leveldb/env.h"
@@ -32,7 +33,7 @@ static ReadOptions			g_ro_nocached;	// safe for global shared instance
 static WriteOptions			g_wo_sync;		// safe for global shared instance
 static const FilterPolicy*	g_fp = 0;		// safe for global shared instance
 
-namespace leveldb { extern port::Mutex g_mutex_backup; }
+namespace leveldb { port::Mutex g_mutex_backup; }
 
 // public native static long leveldb_open(String path, int write_bufsize, int cache_size, boolean use_snappy);
 extern "C" JNIEXPORT jlong JNICALL Java_jane_core_StorageLevelDB_leveldb_1open
@@ -246,7 +247,7 @@ extern "C" JNIEXPORT jlong JNICALL Java_jane_core_StorageLevelDB_leveldb_1backup
 	std::vector<std::string> files;
 	DBImpl* dbi = 0;
 	std::set<uint64_t>* liveset = 0;
-	std::string files_saved;
+	std::stringstream files_saved;
 	env->CreateDir(dstpathstr);
 	g_mutex_backup.Lock();
 	if(!env->GetChildren(srcpathstr, &files).ok()) { g_mutex_backup.Unlock(); return -6; }
@@ -269,15 +270,19 @@ extern "C" JNIEXPORT jlong JNICALL Java_jane_core_StorageLevelDB_leveldb_1backup
 			if(ft == kTableFile && liveset && liveset->find(num) == liveset->end()) continue;
 			r = AppendFile(*env, srcpathstr + '/' + *it, dstpathstr + '/' + *it, ft == kTableFile);
 			if(r > 0) n += r;
-			files_saved.append(*it);
-			files_saved.append("\n");
+			files_saved << *it;
+			if(ft == kDescriptorFile)
+			{
+				env->GetFileSize(dstpathstr + '/' + *it, &num);
+				files_saved << ' ' << num;
+			}
+			files_saved << '\n';
 		}
 		else if(ft == kCurrentFile)
 		{
 			r = AppendFile(*env, srcpathstr + '/' + *it, dstpathstr + '/' + *it + '-' + datetimestr, false);
 			if(r > 0) n += r;
-			files_saved.append(*it + '-' + datetimestr);
-			files_saved.append("\n");
+			files_saved << *it << '-' << datetimestr << '\n';
 		}
 		// [optional] copy LOG file to backup dir and rename to LOG-[datetime]
 		if(r < 0 && dbi) Log(dbi->GetOptions().info_log, "leveldb_backup copy/append failed: r=%d,ft=%d,file='%s'", (int)r, (int)ft, it->c_str());
@@ -286,7 +291,7 @@ extern "C" JNIEXPORT jlong JNICALL Java_jane_core_StorageLevelDB_leveldb_1backup
 	if(liveset) delete liveset;
 	WritableFile* wf = 0;
 	if(!env->NewWritableFile(dstpathstr + '/' + "BACKUP" + '-' + datetimestr, &wf).ok() || !wf) return -7;
-	if(!wf->Append(Slice(files_saved)).ok()) { delete wf; return -8; }
+	if(!wf->Append(Slice(files_saved.str())).ok()) { delete wf; return -8; }
 	if(!wf->Sync().ok()) { delete wf; return -9; }
 	wf->Close();
 	delete wf;

@@ -35,6 +35,8 @@
 
 namespace leveldb {
 
+extern port::Mutex g_mutex_backup;
+
 const int kNumNonTableCacheFiles = 10;
 
 // Information kept for every waiting writer
@@ -630,7 +632,9 @@ void DBImpl::MaybeScheduleCompaction() {
 }
 
 void DBImpl::BGWork(void* db) {
+  g_mutex_backup.Lock();
   reinterpret_cast<DBImpl*>(db)->BackgroundCall();
+  g_mutex_backup.Unlock();
 }
 
 void DBImpl::BackgroundCall() {

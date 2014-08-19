@@ -16,8 +16,6 @@
 
 namespace leveldb {
 
-port::Mutex g_mutex_backup;
-
 namespace {
 
 struct ThreadParam {
@@ -240,9 +238,7 @@ public:
 	}
 
 	virtual Status DeleteFile(const std::string& fname) {
-		g_mutex_backup.Lock();
 		BOOL r = DeleteFileA(fname.c_str());
-		g_mutex_backup.Unlock();
 		return r ? Status::OK() : Status::IOError(fname);
 	}
 
@@ -257,9 +253,7 @@ public:
 		fileop.wFunc = FO_DELETE;
 		fileop.pFrom = dirname2.c_str();
 		fileop.fFlags = 0x14; // FOF_SILENT | FOF_NOCONFIRMATION
-		g_mutex_backup.Lock();
 		int nResult = SHFileOperationA(&fileop);
-		g_mutex_backup.Unlock();
 		return !nResult && !fileop.fAnyOperationsAborted ? Status::OK() : Status::IOError(dirname);
 	}
 
@@ -273,9 +267,7 @@ public:
 	}
 
 	virtual Status RenameFile(const std::string& src, const std::string& target) {
-		g_mutex_backup.Lock();
 		BOOL r = MoveFileExA(src.c_str(), target.c_str(), MOVEFILE_REPLACE_EXISTING);
-		g_mutex_backup.Unlock();
 		return r ? Status::OK() : Status::IOError(src, target);
 	}
 
