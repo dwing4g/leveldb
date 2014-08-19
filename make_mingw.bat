@@ -14,7 +14,7 @@ set OBJ_FILES=builder.o c.o db_impl.o db_iter.o dbformat.o filename.o log_reader
 
 set COMPILE=-DOS_LINUX -DLEVELDB_PLATFORM_POSIX -DSNAPPY -DENABLE_JNI -D_POSIX -D__USE_MINGW_ANSI_STDIO=1 -DNDEBUG -I. -Iinclude -Isnappy -Iport -I"%JAVA_HOME%/include" -I"%JAVA_HOME%/include/win64" -I"%JAVA_HOME%/include/win32" -Ofast -ffast-math -fweb -fomit-frame-pointer -fmerge-all-constants -fno-builtin-memcmp -pipe -pthread -static -lpthread
 
-set COMPILE32=i686-w64-mingw32-g++.exe -m32 -flto -fwhole-program %COMPILE%
+set COMPILE32=i686-w64-mingw32-g++.exe -m32 -march=i686 -flto -fwhole-program %COMPILE%
 set COMPILE64=x86_64-w64-mingw32-g++.exe -m64 %COMPILE%
 
 echo building leveldbjni32.dll ...
