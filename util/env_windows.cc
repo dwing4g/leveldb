@@ -12,6 +12,7 @@
 #include "leveldb/env.h"
 #include "leveldb/status.h"
 #include "port/port.h"
+#define localtime_r(x,y) localtime_s(y,x)
 #include "util/posix_logger.h"
 
 namespace leveldb {
