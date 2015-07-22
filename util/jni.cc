@@ -271,7 +271,7 @@ extern "C" JNIEXPORT jlong JNICALL Java_jane_core_StorageLevelDB_leveldb_1backup
 			r = AppendFile(*env, srcpathstr + '/' + *it, dstpathstr + '/' + *it, ft == kTableFile);
 			if(r > 0) n += r;
 			files_saved << *it;
-			if(ft == kDescriptorFile)
+			// if(ft == kDescriptorFile)
 			{
 				env->GetFileSize(dstpathstr + '/' + *it, &num);
 				files_saved << ' ' << num;
