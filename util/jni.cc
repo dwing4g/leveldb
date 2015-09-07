@@ -331,13 +331,8 @@ extern "C" JNIEXPORT jlong JNICALL Java_jane_core_StorageLevelDB_leveldb_1iter_1
 				else // must be comp > 0
 					if(type <= 1) it->Prev();
 			}
-			else
-			{
-				if(type >= 2)
-					it->SeekToFirst();
-				else
-					it->SeekToLast();
-			}
+			else if(type < 2)
+				it->SeekToLast();
 			jenv->ReleaseByteArrayElements(key, keyptr, JNI_ABORT);
 		}
 	}
