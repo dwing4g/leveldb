@@ -364,9 +364,9 @@ char* CompressFragment(const char* input,
       //
       // Heuristic match skipping: If 32 bytes are scanned with no matches
       // found, start looking only at every other byte. If 32 more bytes are
-      // scanned, look at every third byte, etc.. When a match is found,
-      // immediately go back to looking at every byte. This is a small loss
-      // (~5% performance, ~0.1% density) for compressible data due to more
+      // scanned (or skipped), look at every third byte, etc.. When a match is
+      // found, immediately go back to looking at every byte. This is a small
+      // loss (~5% performance, ~0.1% density) for compressible data due to more
       // bookkeeping, but for non-compressible data (such as JPEG) it's a huge
       // win since the compressor quickly "realizes" the data is incompressible
       // and doesn't bother looking for matches everywhere.
@@ -382,7 +382,8 @@ char* CompressFragment(const char* input,
         ip = next_ip;
         uint32 hash = next_hash;
         assert(hash == Hash(ip, shift));
-        uint32 bytes_between_hash_lookups = skip++ >> 5;
+        uint32 bytes_between_hash_lookups = skip >> 5;
+        skip += bytes_between_hash_lookups;
         next_ip = ip + bytes_between_hash_lookups;
         if (PREDICT_FALSE(next_ip > ip_limit)) {
           goto emit_remainder;
@@ -545,7 +546,9 @@ class SnappyDecompressor {
       if (n == 0) return false;
       const unsigned char c = *(reinterpret_cast<const unsigned char*>(ip));
       reader_->Skip(1);
-      *result |= static_cast<uint32>(c & 0x7f) << shift;
+      uint32 val = c & 0x7f;
+      if (((val << shift) >> shift) != val) return false;
+      *result |= val << shift;
       if (c < 128) {
         break;
       }

@@ -4,7 +4,7 @@ pushd %~dp0
 
 rem install mingw-gcc 4.8+ and append PATH with mingw/bin
 rem install jdk6+ and set JAVA_HOME
-if "%JAVA_HOME%" equ "" set JAVA_HOME=C:/Program Files/Java/jdk1.7.0_65
+if "%JAVA_HOME%" equ "" set JAVA_HOME=C:/Program Files/Java/jdk1.8.0_66
 
 set CORE_FILES=db/builder.cc db/c.cc db/dumpfile.cc db/db_impl.cc db/db_iter.cc db/dbformat.cc db/filename.cc db/log_reader.cc db/log_writer.cc db/memtable.cc db/repair.cc db/table_cache.cc db/version_edit.cc db/version_set.cc db/write_batch.cc table/block.cc table/block_builder.cc table/filter_block.cc table/format.cc table/iterator.cc table/merger.cc table/table.cc table/table_builder.cc table/two_level_iterator.cc util/arena.cc util/bloom.cc util/cache.cc util/coding.cc util/comparator.cc util/crc32c.cc util/env.cc util/env_windows.cc util/filter_policy.cc util/hash.cc util/histogram.cc util/jni.cc util/logging.cc util/options.cc util/status.cc port/port_posix.cc snappy/snappy.cc snappy/snappy-sinksource.cc snappy/snappy-stubs-internal.cc
 
@@ -24,11 +24,11 @@ echo building leveldbjni64.dll ...
 %COMPILE64% -shared -Wl,--image-base,0x10000000 -Wl,--kill-at -Wl,-soname -Wl,leveldbjni64.dll -o leveldbjni64.dll %CORE_FILES%
 
 echo building db-tools ...
-%COMPILE32% -o db_bench32.exe     db/db_bench.cc     %CORE_FILES% %TEST_FILES%
-%COMPILE64% -o db_bench64.exe     db/db_bench.cc     %CORE_FILES% %TEST_FILES%
-%COMPILE32% -o db_test32.exe      db/db_test.cc      %CORE_FILES% %TEST_FILES%
-%COMPILE64% -o db_test64.exe      db/db_test.cc      %CORE_FILES% %TEST_FILES%
-%COMPILE32% -o leveldb_main32.exe db/leveldb_main.cc %CORE_FILES% %TEST_FILES%
-%COMPILE64% -o leveldb_main64.exe db/leveldb_main.cc %CORE_FILES% %TEST_FILES%
+%COMPILE32% -o db_bench32.exe    db/db_bench.cc    %CORE_FILES% %TEST_FILES%
+%COMPILE64% -o db_bench64.exe    db/db_bench.cc    %CORE_FILES% %TEST_FILES%
+%COMPILE32% -o db_test32.exe     db/db_test.cc     %CORE_FILES% %TEST_FILES%
+%COMPILE64% -o db_test64.exe     db/db_test.cc     %CORE_FILES% %TEST_FILES%
+%COMPILE32% -o leveldbutil32.exe db/leveldbutil.cc %CORE_FILES% %TEST_FILES%
+%COMPILE64% -o leveldbutil64.exe db/leveldbutil.cc %CORE_FILES% %TEST_FILES%
 
 pause
