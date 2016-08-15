@@ -366,6 +366,18 @@ public:
 		// round up to the next millisecond
 		Sleep((micros + 999) / 1000);
 	}
+
+	virtual Status NewAppendableFile(const std::string& fname, WritableFile** result) {
+		*result = 0;
+		HANDLE file = CreateFileA(fname.c_str(), GENERIC_WRITE, FILE_SHARE_READ, 0, OPEN_ALWAYS, 0, 0);
+		if(file == INVALID_HANDLE_VALUE) return Status::IOError(fname);
+		if(SetFilePointer(file, 0, 0, FILE_END) == INVALID_SET_FILE_POINTER) {
+			CloseHandle(file);
+			return Status::IOError(fname);
+		}
+		*result = new WindowsWritableFile(fname, file);
+		return Status::OK();
+	}
 };
 
 Env* Env::Default() {
