@@ -25,6 +25,7 @@ using namespace leveldb;
 
 static const jint	WRITE_BUFSIZE_MIN	= 1 << 20;
 static const jint	CACHE_SIZE_MIN		= 1 << 20;
+static const jint	FILE_SIZE_MIN		= 1 << 20;
 static const int	BLOOM_FILTER_BITS	= 10;
 static const size_t	FILE_BUF_SIZE		= 1 << 16;
 
@@ -35,9 +36,9 @@ static const FilterPolicy*	g_fp = 0;		// safe for global shared instance
 
 namespace leveldb { port::Mutex g_mutex_backup; }
 
-// public native static long leveldb_open(String path, int write_bufsize, int cache_size, boolean use_snappy);
+// public native static long leveldb_open(String path, int write_bufsize, int cache_size, int file_size, boolean use_snappy);
 extern "C" JNIEXPORT jlong JNICALL Java_jane_core_StorageLevelDB_leveldb_1open
-	(JNIEnv* jenv, jclass jcls, jstring path, jint write_bufsize, jint cache_size, jboolean use_snappy)
+	(JNIEnv* jenv, jclass jcls, jstring path, jint write_bufsize, jint cache_size, jint file_size, jboolean use_snappy)
 {
 	if(!path) return 0;
 	const char* pathptr = jenv->GetStringUTFChars(path, 0);
@@ -48,6 +49,7 @@ extern "C" JNIEXPORT jlong JNICALL Java_jane_core_StorageLevelDB_leveldb_1open
 	opt.create_if_missing = true;
 	opt.write_buffer_size = (write_bufsize > WRITE_BUFSIZE_MIN ? write_bufsize : WRITE_BUFSIZE_MIN);
 	opt.block_cache = NewLRUCache(cache_size > CACHE_SIZE_MIN ? cache_size : CACHE_SIZE_MIN);
+	opt.max_file_size = (file_size > FILE_SIZE_MIN ? file_size : FILE_SIZE_MIN);
 	opt.compression = (use_snappy ? kSnappyCompression : kNoCompression);
 	opt.filter_policy = (g_fp ? g_fp : (g_fp = NewBloomFilterPolicy(BLOOM_FILTER_BITS)));
 	g_ro_nocached.fill_cache = false;
