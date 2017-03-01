@@ -30,7 +30,7 @@
 #include "snappy-internal.h"
 #include "snappy-sinksource.h"
 
-#if defined(__x86_64__) || defined(_M_X64)
+#if __SSE2__ // defined(__x86_64__) || defined(_M_X64)
 #include <emmintrin.h>
 #endif
 #include <stdio.h>
