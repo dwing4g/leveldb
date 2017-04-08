@@ -23,6 +23,7 @@
 
 using namespace leveldb;
 
+static const int	MAX_OPEN_FILES		= 10000;
 static const jint	WRITE_BUFSIZE_MIN	= 1 << 20;
 static const jint	CACHE_SIZE_MIN		= 1 << 20;
 static const jint	FILE_SIZE_MIN		= 1 << 20;
@@ -47,6 +48,8 @@ extern "C" JNIEXPORT jlong JNICALL Java_jane_core_StorageLevelDB_leveldb_1open
 	jenv->ReleaseStringUTFChars(path, pathptr);
 	Options opt;
 	opt.create_if_missing = true;
+	opt.reuse_logs = true;
+	opt.max_open_files = MAX_OPEN_FILES;
 	opt.write_buffer_size = (write_bufsize > WRITE_BUFSIZE_MIN ? write_bufsize : WRITE_BUFSIZE_MIN);
 	opt.block_cache = NewLRUCache(cache_size > CACHE_SIZE_MIN ? cache_size : CACHE_SIZE_MIN);
 	opt.compression = (use_snappy ? kSnappyCompression : kNoCompression);
@@ -69,6 +72,8 @@ extern "C" JNIEXPORT jlong JNICALL Java_jane_core_StorageLevelDB_leveldb_1open2
 	jenv->ReleaseStringUTFChars(path, pathptr);
 	Options opt;
 	opt.create_if_missing = true;
+	opt.reuse_logs = true;
+	opt.max_open_files = MAX_OPEN_FILES;
 	opt.write_buffer_size = (write_bufsize > WRITE_BUFSIZE_MIN ? write_bufsize : WRITE_BUFSIZE_MIN);
 	opt.block_cache = NewLRUCache(cache_size > CACHE_SIZE_MIN ? cache_size : CACHE_SIZE_MIN);
 	opt.max_file_size = (file_size > FILE_SIZE_MIN ? file_size : FILE_SIZE_MIN);
@@ -448,6 +453,19 @@ extern "C" JNIEXPORT jboolean JNICALL Java_jane_core_StorageLevelDB_leveldb_1com
 	}
 	db->CompactRange((from.size() > 0 ? &from : 0), (to.size() > 0 ? &to : 0));
 	return JNI_TRUE;
+}
+
+// public native static String leveldb_getProperty(long handle, String property);
+extern "C" JNIEXPORT jstring JNICALL Java_jane_core_StorageLevelDB_leveldb_1getProperty
+	(JNIEnv* jenv, jclass jcls, jlong handle, jstring property)
+{
+	DB* db = (DB*)handle;
+	if(!db) return 0;
+	std::string result;
+	const char* propptr = jenv->GetStringUTFChars(property, 0);
+	bool r = db->GetProperty(Slice(propptr), &result);
+	jenv->ReleaseStringUTFChars(property, propptr);
+	return r ? jenv->NewStringUTF(result.c_str()) : 0;
 }
 
 #endif
