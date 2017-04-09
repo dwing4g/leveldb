@@ -455,8 +455,8 @@ extern "C" JNIEXPORT jboolean JNICALL Java_jane_core_StorageLevelDB_leveldb_1com
 	return JNI_TRUE;
 }
 
-// public native static String leveldb_getProperty(long handle, String property);
-extern "C" JNIEXPORT jstring JNICALL Java_jane_core_StorageLevelDB_leveldb_1getProperty
+// public native static String leveldb_property(long handle, String property);
+extern "C" JNIEXPORT jstring JNICALL Java_jane_core_StorageLevelDB_leveldb_1property
 	(JNIEnv* jenv, jclass jcls, jlong handle, jstring property)
 {
 	DB* db = (DB*)handle;
