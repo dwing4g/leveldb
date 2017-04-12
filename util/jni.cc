@@ -121,7 +121,7 @@ extern "C" JNIEXPORT jbyteArray JNICALL Java_jane_core_StorageLevelDB_leveldb_1g
 	return val;
 }
 
-// public native static int leveldb_write(long handle, Iterator<Entry<Octets, OctetsStream>> buf); // return 0 for ok
+// public native static int leveldb_write(long handle, Iterator<Entry<Octets, Octets>> it); // return 0 for ok
 extern "C" JNIEXPORT jint JNICALL Java_jane_core_StorageLevelDB_leveldb_1write
 	(JNIEnv* jenv, jclass jcls, jlong handle, jobject it)
 {
