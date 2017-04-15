@@ -375,7 +375,7 @@ extern "C" JNIEXPORT void JNICALL Java_jane_core_StorageLevelDB_leveldb_1iter_1d
 	delete (Iterator*)iter;
 }
 
-// public native static byte[] leveldb_iter_next(long iter); // return cur-key (maybe null) and do next
+// public native static byte[] leveldb_iter_next(long iter); // return cur-key(maybe null) and do next
 extern "C" JNIEXPORT jbyteArray JNICALL Java_jane_core_StorageLevelDB_leveldb_1iter_1next
 	(JNIEnv* jenv, jclass jcls, jlong iter)
 {
@@ -388,7 +388,7 @@ extern "C" JNIEXPORT jbyteArray JNICALL Java_jane_core_StorageLevelDB_leveldb_1i
 	return key;
 }
 
-// public native static byte[] leveldb_iter_prev(long iter); // return cur-key (maybe null) and do prev
+// public native static byte[] leveldb_iter_prev(long iter); // return cur-key(maybe null) and do prev
 extern "C" JNIEXPORT jbyteArray JNICALL Java_jane_core_StorageLevelDB_leveldb_1iter_1prev
 	(JNIEnv* jenv, jclass jcls, jlong iter)
 {
@@ -408,9 +408,9 @@ extern "C" JNIEXPORT jbyteArray JNICALL Java_jane_core_StorageLevelDB_leveldb_1i
 	Iterator* it = (Iterator*)iter;
 	if(!it || !it->Valid()) return 0;
 	const Slice& slice = it->value();
-	jbyteArray key = jenv->NewByteArray(slice.size());
-	jenv->SetByteArrayRegion(key, 0, slice.size(), (const jbyte*)slice.data());
-	return key;
+	jbyteArray val = jenv->NewByteArray(slice.size());
+	jenv->SetByteArrayRegion(val, 0, slice.size(), (const jbyte*)slice.data());
+	return val;
 }
 
 // public native static boolean leveldb_compact(long handle, byte[] key_from, int key_from_len, byte[] key_to, int key_to_len);
