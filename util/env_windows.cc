@@ -4,6 +4,7 @@
 
 #ifdef WIN32
 
+#undef _WIN32_WINNT
 #define _WIN32_WINNT 0x500
 #include <windows.h>
 #include <stdio.h>
@@ -25,13 +26,23 @@ struct ThreadParam {
 	ThreadParam(void (*function)(void* arg), void* arg) : function(function), arg(arg) {}
 };
 
-DWORD WINAPI ThreadProc(LPVOID lpParameter) {
+static DWORD WINAPI ThreadProc(LPVOID lpParameter) {
 	ThreadParam* param = static_cast<ThreadParam*>(lpParameter);
 	void (*function)(void* arg) = param->function;
 	void* arg = param->arg;
 	delete param;
 	function(arg);
 	return 0;
+}
+
+static WCHAR* Utf8_Wchar(const std::string& src, WCHAR dst[MAX_PATH]) {
+	dst[MultiByteToWideChar(65001, 0, static_cast<LPCSTR>(src.c_str()), src.size(), dst, MAX_PATH - 1)] = 0;
+	return dst;
+}
+
+static char* Wchar_Utf8(const WCHAR* src, char dst[MAX_PATH]) {
+	dst[WideCharToMultiByte(65001, 0, static_cast<LPCWSTR>(src), -1, dst, MAX_PATH - 1, 0, 0)] = 0;
+	return dst;
 }
 
 class WindowsSequentialFile : public SequentialFile {
@@ -176,7 +187,8 @@ public:
 	// The returned file will only be accessed by one thread at a time.
 	virtual Status NewSequentialFile(const std::string& fname, SequentialFile** result) {
 		*result = 0;
-		HANDLE file = CreateFileA(fname.c_str(), GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE,
+		WCHAR wbuf[MAX_PATH];
+		HANDLE file = CreateFileW(Utf8_Wchar(fname, wbuf), GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE,
 			0, OPEN_EXISTING, FILE_FLAG_SEQUENTIAL_SCAN, 0);
 		if(file == INVALID_HANDLE_VALUE) return Status::IOError(fname);
 		*result = new WindowsSequentialFile(fname, file);
@@ -192,7 +204,8 @@ public:
 	// The returned file may be concurrently accessed by multiple threads.
 	virtual Status NewRandomAccessFile(const std::string& fname, RandomAccessFile** result) {
 		*result = 0;
-		HANDLE file = CreateFileA(fname.c_str(), GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE,
+		WCHAR wbuf[MAX_PATH];
+		HANDLE file = CreateFileW(Utf8_Wchar(fname, wbuf), GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE,
 			0, OPEN_EXISTING, FILE_FLAG_RANDOM_ACCESS, 0);
 		if(file == INVALID_HANDLE_VALUE) return Status::IOError(fname);
 		*result = new WindowsRandomAccessFile(fname, file);
@@ -208,14 +221,16 @@ public:
 	// The returned file will only be accessed by one thread at a time.
 	virtual Status NewWritableFile(const std::string& fname, WritableFile** result) {
 		*result = 0;
-		HANDLE file = CreateFileA(fname.c_str(), GENERIC_WRITE, FILE_SHARE_READ, 0, CREATE_ALWAYS, 0, 0);
+		WCHAR wbuf[MAX_PATH];
+		HANDLE file = CreateFileW(Utf8_Wchar(fname, wbuf), GENERIC_WRITE, FILE_SHARE_READ, 0, CREATE_ALWAYS, 0, 0);
 		if(file == INVALID_HANDLE_VALUE) return Status::IOError(fname);
 		*result = new WindowsWritableFile(fname, file);
 		return Status::OK();
 	}
 
 	virtual bool FileExists(const std::string& fname) {
-		DWORD attr = GetFileAttributesA(fname.c_str());
+		WCHAR wbuf[MAX_PATH];
+		DWORD attr = GetFileAttributesW(Utf8_Wchar(fname, wbuf));
 		return attr != INVALID_FILE_ATTRIBUTES && !(attr & FILE_ATTRIBUTE_DIRECTORY);
 	}
 
@@ -226,49 +241,54 @@ public:
 		result->clear();
 		std::string dirWildcard(dir);
 		dirWildcard.append("\\*");
-		WIN32_FIND_DATAA fd = {0};
-		HANDLE h = FindFirstFileA(dirWildcard.c_str(), &fd);
+		WIN32_FIND_DATAW fd = {0};
+		WCHAR wbuf[MAX_PATH];
+		HANDLE h = FindFirstFileW(Utf8_Wchar(dirWildcard, wbuf), &fd);
 		if(h == INVALID_HANDLE_VALUE) return Status::IOError(dir);
+		char buf[MAX_PATH];
 		do {
 			if(!(fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
-				result->push_back(fd.cFileName);
+				result->push_back(Wchar_Utf8(fd.cFileName, buf));
 		}
-		while(FindNextFileA(h, &fd));
+		while(FindNextFileW(h, &fd));
 		FindClose(h);
 		return Status::OK();
 	}
 
 	virtual Status DeleteFile(const std::string& fname) {
-		BOOL r = DeleteFileA(fname.c_str());
+		WCHAR wbuf[MAX_PATH];
+		BOOL r = DeleteFileW(Utf8_Wchar(fname, wbuf));
 		return r ? Status::OK() : Status::IOError(fname);
 	}
 
 	virtual Status CreateDir(const std::string& dirname) {
-		return CreateDirectoryA(dirname.c_str(), 0) ? Status::OK() : Status::IOError(dirname);
+		WCHAR wbuf[MAX_PATH];
+		return CreateDirectoryW(Utf8_Wchar(dirname, wbuf), 0) ? Status::OK() : Status::IOError(dirname);
 	}
 
 	virtual Status DeleteDir(const std::string& dirname) {
-		std::string dirname2(dirname);
-		dirname2.push_back('\0');
-		SHFILEOPSTRUCTA fileop = {0};
+		WCHAR wbuf[MAX_PATH];
+		SHFILEOPSTRUCTW fileop = {0};
 		fileop.wFunc = FO_DELETE;
-		fileop.pFrom = dirname2.c_str();
+		fileop.pFrom = Utf8_Wchar(dirname, wbuf);
 		fileop.fFlags = 0x14; // FOF_SILENT | FOF_NOCONFIRMATION
-		int nResult = SHFileOperationA(&fileop);
+		int nResult = SHFileOperationW(&fileop);
 		return !nResult && !fileop.fAnyOperationsAborted ? Status::OK() : Status::IOError(dirname);
 	}
 
 	virtual Status GetFileSize(const std::string& fname, uint64_t* file_size) {
 		*file_size = 0;
 		WIN32_FILE_ATTRIBUTE_DATA fad;
-		if(!GetFileAttributesExA(fname.c_str(), GetFileExInfoStandard, &fad))
+		WCHAR wbuf[MAX_PATH];
+		if(!GetFileAttributesExW(Utf8_Wchar(fname, wbuf), GetFileExInfoStandard, &fad))
 			return Status::IOError(fname);
 		*file_size = (static_cast<uint64_t>(fad.nFileSizeHigh) << 32) + fad.nFileSizeLow;
 		return Status::OK();
 	}
 
 	virtual Status RenameFile(const std::string& src, const std::string& target) {
-		BOOL r = MoveFileExA(src.c_str(), target.c_str(), MOVEFILE_REPLACE_EXISTING);
+		WCHAR wbuf1[MAX_PATH], wbuf2[MAX_PATH];
+		BOOL r = MoveFileExW(Utf8_Wchar(src, wbuf1), Utf8_Wchar(target, wbuf2), MOVEFILE_REPLACE_EXISTING);
 		return r ? Status::OK() : Status::IOError(src, target);
 	}
 
@@ -288,7 +308,8 @@ public:
 	// May create the named file if it does not already exist.
 	virtual Status LockFile(const std::string& fname, FileLock** lock) {
 		*lock = 0;
-		HANDLE file = CreateFileA(fname.c_str(), GENERIC_READ | GENERIC_WRITE, 0, 0, OPEN_ALWAYS, 0, 0);
+		WCHAR wbuf[MAX_PATH];
+		HANDLE file = CreateFileW(Utf8_Wchar(fname, wbuf), GENERIC_READ | GENERIC_WRITE, 0, 0, OPEN_ALWAYS, 0, 0);
 		if(file == INVALID_HANDLE_VALUE) return Status::IOError(fname);
 		*lock = new WindowsFileLock(fname, file);
 		return Status::OK();
@@ -327,9 +348,10 @@ public:
 	// between runs of the same process, but subsequent calls will return the
 	// same directory.
 	virtual Status GetTestDirectory(std::string* path) {
-		char tempPath[MAX_PATH];
-		GetTempPathA(MAX_PATH, &tempPath[0]);
-		*path = tempPath;
+		WCHAR tempPath[MAX_PATH];
+		GetTempPathW(MAX_PATH, tempPath);
+		char buf[MAX_PATH];
+		*path = Wchar_Utf8(tempPath, buf);
 		return Status::OK();
 	}
 
@@ -339,7 +361,8 @@ public:
 
 	// Create and return a log file for storing informational messages.
 	virtual Status NewLogger(const std::string& fname, Logger** result) {
-		FILE* fp = fopen(fname.c_str(), "wb");
+		WCHAR wbuf[MAX_PATH];
+		FILE* fp = _wfopen(Utf8_Wchar(fname, wbuf), L"wb");
 		if(!fp) {
 			*result = 0;
 			return Status::IOError(fname, strerror(errno));
@@ -369,7 +392,8 @@ public:
 
 	virtual Status NewAppendableFile(const std::string& fname, WritableFile** result) {
 		*result = 0;
-		HANDLE file = CreateFileA(fname.c_str(), GENERIC_WRITE, FILE_SHARE_READ, 0, OPEN_ALWAYS, 0, 0);
+		WCHAR wbuf[MAX_PATH];
+		HANDLE file = CreateFileW(Utf8_Wchar(fname, wbuf), GENERIC_WRITE, FILE_SHARE_READ, 0, OPEN_ALWAYS, 0, 0);
 		if(file == INVALID_HANDLE_VALUE) return Status::IOError(fname);
 		if(SetFilePointer(file, 0, 0, FILE_END) == INVALID_SET_FILE_POINTER) {
 			CloseHandle(file);
@@ -386,5 +410,7 @@ Env* Env::Default() {
 }
 
 }
+
+#undef localtime_r
 
 #endif
