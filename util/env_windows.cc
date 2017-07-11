@@ -181,8 +181,9 @@ public:
 
 	// Create a brand new sequentially-readable file with the specified name.
 	// On success, stores a pointer to the new file in *result and returns OK.
-	// On failure stores 0 in *result and returns non-OK.  If the file does
-	// not exist, returns a non-OK status.
+	// On failure stores NULL in *result and returns non-OK.  If the file does
+	// not exist, returns a non-OK status.  Implementations should return a
+	// NotFound status when the file does not exist.
 	//
 	// The returned file will only be accessed by one thread at a time.
 	virtual Status NewSequentialFile(const std::string& fname, SequentialFile** result) {
@@ -190,16 +191,17 @@ public:
 		WCHAR wbuf[MAX_PATH];
 		HANDLE file = CreateFileW(Utf8_Wchar(fname, wbuf), GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE,
 			0, OPEN_EXISTING, FILE_FLAG_SEQUENTIAL_SCAN, 0);
-		if(file == INVALID_HANDLE_VALUE) return Status::IOError(fname);
+		if(file == INVALID_HANDLE_VALUE) return GetLastError() == ERROR_FILE_NOT_FOUND ? Status::NotFound(fname) : Status::IOError(fname);
 		*result = new WindowsSequentialFile(fname, file);
 		return Status::OK();
 	}
 
 	// Create a brand new random access read-only file with the
 	// specified name.  On success, stores a pointer to the new file in
-	// *result and returns OK.  On failure stores 0 in *result and
+	// *result and returns OK.  On failure stores NULL in *result and
 	// returns non-OK.  If the file does not exist, returns a non-OK
-	// status.
+	// status.  Implementations should return a NotFound status when the file does
+	// not exist.
 	//
 	// The returned file may be concurrently accessed by multiple threads.
 	virtual Status NewRandomAccessFile(const std::string& fname, RandomAccessFile** result) {
@@ -207,7 +209,7 @@ public:
 		WCHAR wbuf[MAX_PATH];
 		HANDLE file = CreateFileW(Utf8_Wchar(fname, wbuf), GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE,
 			0, OPEN_EXISTING, FILE_FLAG_RANDOM_ACCESS, 0);
-		if(file == INVALID_HANDLE_VALUE) return Status::IOError(fname);
+		if(file == INVALID_HANDLE_VALUE) return GetLastError() == ERROR_FILE_NOT_FOUND ? Status::NotFound(fname) : Status::IOError(fname);
 		*result = new WindowsRandomAccessFile(fname, file);
 		return Status::OK();
 	}
@@ -215,7 +217,7 @@ public:
 	// Create an object that writes to a new file with the specified
 	// name.  Deletes any existing file with the same name and creates a
 	// new file.  On success, stores a pointer to the new file in
-	// *result and returns OK.  On failure stores 0 in *result and
+	// *result and returns OK.  On failure stores NULL in *result and
 	// returns non-OK.
 	//
 	// The returned file will only be accessed by one thread at a time.
@@ -228,6 +230,7 @@ public:
 		return Status::OK();
 	}
 
+	// Returns true iff the named file exists.
 	virtual bool FileExists(const std::string& fname) {
 		WCHAR wbuf[MAX_PATH];
 		DWORD attr = GetFileAttributesW(Utf8_Wchar(fname, wbuf));
@@ -255,17 +258,20 @@ public:
 		return Status::OK();
 	}
 
+	// Delete the named file.
 	virtual Status DeleteFile(const std::string& fname) {
 		WCHAR wbuf[MAX_PATH];
 		BOOL r = DeleteFileW(Utf8_Wchar(fname, wbuf));
 		return r ? Status::OK() : Status::IOError(fname);
 	}
 
+	// Create the specified directory.
 	virtual Status CreateDir(const std::string& dirname) {
 		WCHAR wbuf[MAX_PATH];
 		return CreateDirectoryW(Utf8_Wchar(dirname, wbuf), 0) ? Status::OK() : Status::IOError(dirname);
 	}
 
+	// Delete the specified directory.
 	virtual Status DeleteDir(const std::string& dirname) {
 		WCHAR wbuf[MAX_PATH];
 		SHFILEOPSTRUCTW fileop = {0};
@@ -276,6 +282,7 @@ public:
 		return !nResult && !fileop.fAnyOperationsAborted ? Status::OK() : Status::IOError(dirname);
 	}
 
+	// Store the size of fname in *file_size.
 	virtual Status GetFileSize(const std::string& fname, uint64_t* file_size) {
 		*file_size = 0;
 		WIN32_FILE_ATTRIBUTE_DATA fad;
@@ -286,6 +293,7 @@ public:
 		return Status::OK();
 	}
 
+	// Rename file src to target.
 	virtual Status RenameFile(const std::string& src, const std::string& target) {
 		WCHAR wbuf1[MAX_PATH], wbuf2[MAX_PATH];
 		BOOL r = MoveFileExW(Utf8_Wchar(src, wbuf1), Utf8_Wchar(target, wbuf2), MOVEFILE_REPLACE_EXISTING);
@@ -293,7 +301,7 @@ public:
 	}
 
 	// Lock the specified file.  Used to prevent concurrent access to
-	// the same db by multiple processes.  On failure, stores 0 in
+	// the same db by multiple processes.  On failure, stores NULL in
 	// *lock and returns non-OK.
 	//
 	// On success, stores a pointer to the object that represents the
@@ -385,11 +393,24 @@ public:
 		return count.QuadPart * 1000000LL / freq_.QuadPart;
 	}
 
+	// Sleep/delay the thread for the prescribed number of micro-seconds.
 	virtual void SleepForMicroseconds(int micros) {
 		// round up to the next millisecond
 		Sleep((micros + 999) / 1000);
 	}
 
+	// Create an object that either appends to an existing file, or
+	// writes to a new file (if the file does not exist to begin with).
+	// On success, stores a pointer to the new file in *result and
+	// returns OK.  On failure stores NULL in *result and returns
+	// non-OK.
+	//
+	// The returned file will only be accessed by one thread at a time.
+	//
+	// May return an IsNotSupportedError error if this Env does
+	// not allow appending to an existing file.  Users of Env (including
+	// the leveldb implementation) must be prepared to deal with
+	// an Env that does not support appending.
 	virtual Status NewAppendableFile(const std::string& fname, WritableFile** result) {
 		*result = 0;
 		WCHAR wbuf[MAX_PATH];
@@ -404,6 +425,11 @@ public:
 	}
 };
 
+// Return a default environment suitable for the current operating
+// system.  Sophisticated users may wish to provide their own Env
+// implementation instead of relying on this default environment.
+//
+// The result of Default() belongs to leveldb and must never be deleted.
 Env* Env::Default() {
 	static WindowsEnv g_env;
 	return &g_env;
