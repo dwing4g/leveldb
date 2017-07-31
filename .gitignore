@@ -11,3 +11,7 @@ build_config.mk
 db_bench
 leveldbutil
 /tmp/
+.vs/
+Debug/
+Release/
+leveldb.vcxproj.user
