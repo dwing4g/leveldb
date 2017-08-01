@@ -3,8 +3,6 @@ setlocal
 pushd %~dp0
 
 rem install mingw-gcc 4.8+ and append PATH with mingw/bin
-rem install jdk6+ and set JAVA_HOME
-if "%JAVA_HOME%" equ "" set JAVA_HOME=C:/Program Files/Java/jdk1.8.0_121
 
 set CORE_FILES=^
 db/builder.cc ^

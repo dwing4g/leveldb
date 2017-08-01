@@ -118,7 +118,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;LEVELDB_EXPORTS;OS_WIN;COMPILER_MSVC;LEVELDB_PLATFORM_POSIX;LEVELDB_PLATFORM_POSIX_SSE;SNAPPY;ENABLE_JNI;WIN32_LEAN_AND_MEAN;NOMINMAX;HAVE_PTW32_CONFIG_H;_CRT_SECURE_NO_WARNINGS;PTW32_STATIC_LIB;ssize_t=size_t;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>.;include;port;port\vs;port\vs\jni;port\vs\pthread;snappy</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.;include;port;port\vs;port\vs\jni;snappy</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -134,7 +134,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>_DEBUG;_WINDOWS;_USRDLL;LEVELDB_EXPORTS;OS_WIN;COMPILER_MSVC;LEVELDB_PLATFORM_POSIX;LEVELDB_PLATFORM_POSIX_SSE;SNAPPY;ENABLE_JNI;WIN32_LEAN_AND_MEAN;NOMINMAX;HAVE_PTW32_CONFIG_H;_CRT_SECURE_NO_WARNINGS;PTW32_STATIC_LIB;ssize_t=size_t;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>.;include;port;port\vs;port\vs\jni;port\vs\pthread;snappy</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.;include;port;port\vs;port\vs\jni;snappy</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -158,7 +158,7 @@
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <BufferSecurityCheck>false</BufferSecurityCheck>
-      <AdditionalIncludeDirectories>.;include;port;port\vs;port\vs\jni;port\vs\pthread;snappy</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.;include;port;port\vs;port\vs\jni;snappy</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -180,7 +180,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>NDEBUG;_WINDOWS;_USRDLL;LEVELDB_EXPORTS;OS_WIN;COMPILER_MSVC;LEVELDB_PLATFORM_POSIX;LEVELDB_PLATFORM_POSIX_SSE;SNAPPY;ENABLE_JNI;WIN32_LEAN_AND_MEAN;NOMINMAX;HAVE_PTW32_CONFIG_H;_CRT_SECURE_NO_WARNINGS;PTW32_STATIC_LIB;ssize_t=size_t;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>.;include;port;port\vs;port\vs\jni;port\vs\pthread;snappy</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.;include;port;port\vs;port\vs\jni;snappy</AdditionalIncludeDirectories>
       <DebugInformationFormat>None</DebugInformationFormat>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>

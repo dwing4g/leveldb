@@ -19,14 +19,14 @@
     <Filter Include="util">
       <UniqueIdentifier>{9eb7f993-9a91-4b61-9458-2616181004f3}</UniqueIdentifier>
     </Filter>
-    <Filter Include="port\pthread">
-      <UniqueIdentifier>{55ce2ef2-64fe-4140-845e-91425f13cf0c}</UniqueIdentifier>
+    <Filter Include="port\vs">
+      <UniqueIdentifier>{d2b97b60-2b34-4595-a9af-0fcb1e3ed33e}</UniqueIdentifier>
     </Filter>
-    <Filter Include="port\sys">
-      <UniqueIdentifier>{0de03e6c-4957-4c35-9157-e59c0558bebe}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="port\jni">
+    <Filter Include="port\vs\jni">
       <UniqueIdentifier>{1b1f216d-cb1f-4cf3-8412-7630b3d8f254}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="port\vs\sys">
+      <UniqueIdentifier>{0de03e6c-4957-4c35-9157-e59c0558bebe}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -153,146 +153,11 @@
     <ClCompile Include="util\status.cc">
       <Filter>util</Filter>
     </ClCompile>
-    <ClCompile Include="port\port_posix.cc">
-      <Filter>port</Filter>
-    </ClCompile>
     <ClCompile Include="port\port_posix_sse.cc">
       <Filter>port</Filter>
     </ClCompile>
-    <ClCompile Include="port\vs\pthread\cleanup.c">
-      <Filter>port\pthread</Filter>
-    </ClCompile>
-    <ClCompile Include="port\vs\pthread\global.c">
-      <Filter>port\pthread</Filter>
-    </ClCompile>
-    <ClCompile Include="port\vs\pthread\pthread_cond_destroy.c">
-      <Filter>port\pthread</Filter>
-    </ClCompile>
-    <ClCompile Include="port\vs\pthread\pthread_cond_init.c">
-      <Filter>port\pthread</Filter>
-    </ClCompile>
-    <ClCompile Include="port\vs\pthread\pthread_cond_signal.c">
-      <Filter>port\pthread</Filter>
-    </ClCompile>
-    <ClCompile Include="port\vs\pthread\pthread_cond_wait.c">
-      <Filter>port\pthread</Filter>
-    </ClCompile>
-    <ClCompile Include="port\vs\pthread\pthread_equal.c">
-      <Filter>port\pthread</Filter>
-    </ClCompile>
-    <ClCompile Include="port\vs\pthread\pthread_getspecific.c">
-      <Filter>port\pthread</Filter>
-    </ClCompile>
-    <ClCompile Include="port\vs\pthread\pthread_mutex_destroy.c">
-      <Filter>port\pthread</Filter>
-    </ClCompile>
-    <ClCompile Include="port\vs\pthread\pthread_mutex_init.c">
-      <Filter>port\pthread</Filter>
-    </ClCompile>
-    <ClCompile Include="port\vs\pthread\pthread_mutex_lock.c">
-      <Filter>port\pthread</Filter>
-    </ClCompile>
-    <ClCompile Include="port\vs\pthread\pthread_mutex_trylock.c">
-      <Filter>port\pthread</Filter>
-    </ClCompile>
-    <ClCompile Include="port\vs\pthread\pthread_mutex_unlock.c">
-      <Filter>port\pthread</Filter>
-    </ClCompile>
-    <ClCompile Include="port\vs\pthread\pthread_once.c">
-      <Filter>port\pthread</Filter>
-    </ClCompile>
-    <ClCompile Include="port\vs\pthread\pthread_self.c">
-      <Filter>port\pthread</Filter>
-    </ClCompile>
-    <ClCompile Include="port\vs\pthread\pthread_setspecific.c">
-      <Filter>port\pthread</Filter>
-    </ClCompile>
-    <ClCompile Include="port\vs\pthread\pthread_testcancel.c">
-      <Filter>port\pthread</Filter>
-    </ClCompile>
-    <ClCompile Include="port\vs\pthread\ptw32_cond_check_need_init.c">
-      <Filter>port\pthread</Filter>
-    </ClCompile>
-    <ClCompile Include="port\vs\pthread\ptw32_MCS_lock.c">
-      <Filter>port\pthread</Filter>
-    </ClCompile>
-    <ClCompile Include="port\vs\pthread\ptw32_mutex_check_need_init.c">
-      <Filter>port\pthread</Filter>
-    </ClCompile>
-    <ClCompile Include="port\vs\pthread\ptw32_new.c">
-      <Filter>port\pthread</Filter>
-    </ClCompile>
-    <ClCompile Include="port\vs\pthread\ptw32_relmillisecs.c">
-      <Filter>port\pthread</Filter>
-    </ClCompile>
-    <ClCompile Include="port\vs\pthread\ptw32_semwait.c">
-      <Filter>port\pthread</Filter>
-    </ClCompile>
-    <ClCompile Include="port\vs\pthread\ptw32_throw.c">
-      <Filter>port\pthread</Filter>
-    </ClCompile>
-    <ClCompile Include="port\vs\pthread\ptw32_tkAssocCreate.c">
-      <Filter>port\pthread</Filter>
-    </ClCompile>
-    <ClCompile Include="port\vs\pthread\sched_yield.c">
-      <Filter>port\pthread</Filter>
-    </ClCompile>
-    <ClCompile Include="port\vs\pthread\sem_destroy.c">
-      <Filter>port\pthread</Filter>
-    </ClCompile>
-    <ClCompile Include="port\vs\pthread\sem_init.c">
-      <Filter>port\pthread</Filter>
-    </ClCompile>
-    <ClCompile Include="port\vs\pthread\sem_post.c">
-      <Filter>port\pthread</Filter>
-    </ClCompile>
-    <ClCompile Include="port\vs\pthread\sem_post_multiple.c">
-      <Filter>port\pthread</Filter>
-    </ClCompile>
-    <ClCompile Include="port\vs\pthread\sem_timedwait.c">
-      <Filter>port\pthread</Filter>
-    </ClCompile>
-    <ClCompile Include="port\vs\pthread\sem_wait.c">
-      <Filter>port\pthread</Filter>
-    </ClCompile>
-    <ClCompile Include="port\vs\pthread\w32_CancelableWait.c">
-      <Filter>port\pthread</Filter>
-    </ClCompile>
-    <ClCompile Include="port\vs\pthread\pthread_mutex_consistent.c">
-      <Filter>port\pthread</Filter>
-    </ClCompile>
-    <ClCompile Include="port\vs\pthread\ptw32_reuse.c">
-      <Filter>port\pthread</Filter>
-    </ClCompile>
-    <ClCompile Include="port\vs\pthread\pthread_win32_attach_detach_np.c">
-      <Filter>port\pthread</Filter>
-    </ClCompile>
-    <ClCompile Include="port\vs\pthread\ptw32_callUserDestroyRoutines.c">
-      <Filter>port\pthread</Filter>
-    </ClCompile>
-    <ClCompile Include="port\vs\pthread\ptw32_processInitialize.c">
-      <Filter>port\pthread</Filter>
-    </ClCompile>
-    <ClCompile Include="port\vs\pthread\ptw32_processTerminate.c">
-      <Filter>port\pthread</Filter>
-    </ClCompile>
-    <ClCompile Include="port\vs\pthread\ptw32_threadDestroy.c">
-      <Filter>port\pthread</Filter>
-    </ClCompile>
-    <ClCompile Include="port\vs\pthread\pthread_cancel.c">
-      <Filter>port\pthread</Filter>
-    </ClCompile>
-    <ClCompile Include="port\vs\pthread\pthread_key_create.c">
-      <Filter>port\pthread</Filter>
-    </ClCompile>
-    <ClCompile Include="port\vs\pthread\pthread_key_delete.c">
-      <Filter>port\pthread</Filter>
-    </ClCompile>
-    <ClCompile Include="port\vs\pthread\ptw32_tkAssocDestroy.c">
-      <Filter>port\pthread</Filter>
-    </ClCompile>
-    <ClCompile Include="port\vs\pthread\pthread_kill.c">
-      <Filter>port\pthread</Filter>
+    <ClCompile Include="port\vs\port_cpp11.cc">
+      <Filter>port\vs</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -452,38 +317,23 @@
     <ClInclude Include="port\endian.h">
       <Filter>port</Filter>
     </ClInclude>
-    <ClInclude Include="port\port_posix.h">
-      <Filter>port</Filter>
-    </ClInclude>
     <ClInclude Include="port\thread_annotations.h">
       <Filter>port</Filter>
     </ClInclude>
-    <ClInclude Include="port\vs\pthread\implement.h">
-      <Filter>port\pthread</Filter>
-    </ClInclude>
-    <ClInclude Include="port\vs\pthread\pthread.h">
-      <Filter>port\pthread</Filter>
-    </ClInclude>
-    <ClInclude Include="port\vs\pthread\sched.h">
-      <Filter>port\pthread</Filter>
-    </ClInclude>
-    <ClInclude Include="port\vs\pthread\semaphore.h">
-      <Filter>port\pthread</Filter>
-    </ClInclude>
-    <ClInclude Include="port\vs\pthread\context.h">
-      <Filter>port\pthread</Filter>
-    </ClInclude>
     <ClInclude Include="port\vs\sys\time.h">
-      <Filter>port\sys</Filter>
+      <Filter>port\vs\sys</Filter>
     </ClInclude>
     <ClInclude Include="port\vs\jni\jni.h">
-      <Filter>port\jni</Filter>
+      <Filter>port\vs\jni</Filter>
     </ClInclude>
     <ClInclude Include="port\vs\jni\jni_md.h">
-      <Filter>port\jni</Filter>
+      <Filter>port\vs\jni</Filter>
     </ClInclude>
-    <ClInclude Include="port\vs\pthread\config.h">
-      <Filter>port\pthread</Filter>
+    <ClInclude Include="port\vs\pthread.h">
+      <Filter>port\vs</Filter>
+    </ClInclude>
+    <ClInclude Include="port\port_posix.h">
+      <Filter>port</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
