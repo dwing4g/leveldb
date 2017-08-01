@@ -13,5 +13,7 @@ leveldbutil
 /tmp/
 .vs/
 Debug/
+Debug_x64/
 Release/
-leveldb.vcxproj.user
+Release_x64/
+*.vcxproj.user

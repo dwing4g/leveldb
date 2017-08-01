@@ -50,7 +50,9 @@ class WorkingMemory {
   uint16 small_table_[1<<10];    // 2KB
   uint16* large_table_;          // Allocated only when needed
 
-  DISALLOW_COPY_AND_ASSIGN(WorkingMemory);
+  // No copying
+  WorkingMemory(const WorkingMemory&);
+  void operator=(const WorkingMemory&);
 };
 
 // Flat array compression that does not emit the "uncompressed length"
@@ -80,9 +82,8 @@ char* CompressFragment(const char* input,
 // Does not read *(s1 + (s2_limit - s2)) or beyond.
 // Requires that s2_limit >= s2.
 //
-// Separate implementation for x86_64, for speed.  Uses the fact that
-// x86_64 is little endian.
-#if defined(ARCH_K8)
+// Separate implementation for 64-bit, little-endian cpus.
+#if defined(ARCH_K8) || (defined(ARCH_PPC) && !defined(WORDS_BIGENDIAN))
 static inline std::pair<size_t, bool> FindMatchLength(const char* s1,
                                                       const char* s2,
                                                       const char* s2_limit) {
@@ -169,11 +170,6 @@ enum {
   COPY_4_BYTE_OFFSET = 3
 };
 static const int kMaximumTagLength = 5;  // COPY_4_BYTE_OFFSET plus the actual offset.
-
-// Mapping from i in range [0,4] to a mask to extract the bottom 8*i bits
-static const uint32 wordmask[] = {
-  0u, 0xffu, 0xffffu, 0xffffffu, 0xffffffffu
-};
 
 // Data stored per entry in lookup table:
 //      Range   Bits-used       Description

@@ -2,11 +2,12 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#ifdef WIN32
+#ifdef _WIN32
 
 #undef _WIN32_WINNT
 #define _WIN32_WINNT 0x500
 #include <windows.h>
+#include <shellapi.h>
 #include <stdio.h>
 #undef DeleteFile
 #undef min
@@ -36,7 +37,7 @@ static DWORD WINAPI ThreadProc(LPVOID lpParameter) {
 }
 
 static WCHAR* Utf8_Wchar(const std::string& src, WCHAR dst[MAX_PATH]) {
-	dst[MultiByteToWideChar(65001, 0, static_cast<LPCSTR>(src.c_str()), src.size(), dst, MAX_PATH - 1)] = 0;
+	dst[MultiByteToWideChar(65001, 0, static_cast<LPCSTR>(src.c_str()), (int)src.size(), dst, MAX_PATH - 1)] = 0;
 	return dst;
 }
 
@@ -55,7 +56,7 @@ public:
 
 	virtual Status Read(size_t n, Slice* result, char* scratch) {
 		DWORD bytesRead = 0;
-		BOOL success = ReadFile(file_, scratch, n, &bytesRead, 0);
+		BOOL success = ReadFile(file_, scratch, (DWORD)n, &bytesRead, 0);
 		*result = Slice(scratch, bytesRead);
 		return success ? Status::OK() : Status::IOError(fname_);
 	}
@@ -81,7 +82,7 @@ public:
 		overlapped.Offset = static_cast<DWORD>(offset);
 		overlapped.OffsetHigh = static_cast<DWORD>(offset >> 32);
 		DWORD bytesRead = 0;
-		BOOL success = ReadFile(file_, scratch, n, &bytesRead, &overlapped);
+		BOOL success = ReadFile(file_, scratch, (DWORD)n, &bytesRead, &overlapped);
 		*result = Slice(scratch, bytesRead);
 		return success ? Status::OK() : Status::IOError(fname_);
 	}
@@ -121,7 +122,7 @@ public:
 		size_t pos = 0;
 		while(pos < pos_) {
 			DWORD bytesWritten = 0;
-			if(!WriteFile(file_, &buffer_[pos], pos_ - pos, &bytesWritten, 0))
+			if(!WriteFile(file_, &buffer_[pos], (DWORD)(pos_ - pos), &bytesWritten, 0))
 				return Status::IOError(fname_);
 			pos += bytesWritten;
 		}

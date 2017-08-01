@@ -102,7 +102,7 @@ snappy-stubs-internal.o ^
 testutil.o ^
 testharness.o
 
-set COMPILE=-DOS_LINUX -DLEVELDB_PLATFORM_POSIX -DLEVELDB_PLATFORM_POSIX_SSE -DSNAPPY -DENABLE_JNI -D_POSIX -D__USE_MINGW_ANSI_STDIO=1 -DNDEBUG -I. -Iinclude -Isnappy -Iport -I"%JAVA_HOME%/include" -I"%JAVA_HOME%/include/win64" -I"%JAVA_HOME%/include/win32" -Ofast -ffast-math -fweb -fomit-frame-pointer -fmerge-all-constants -fno-builtin-memcmp -pipe -pthread -static -lpthread
+set COMPILE=-DOS_WIN -DLEVELDB_PLATFORM_POSIX -DLEVELDB_PLATFORM_POSIX_SSE -DSNAPPY -DENABLE_JNI -D_POSIX -D__USE_MINGW_ANSI_STDIO=1 -DNDEBUG -I. -Iinclude -Isnappy -Iport -Iport/vs/jni -Ofast -ffast-math -fweb -fomit-frame-pointer -fmerge-all-constants -fno-builtin-memcmp -pipe -pthread -static -lpthread
 
 set COMPILE32=i686-w64-mingw32-g++.exe -m32 -march=i686 -flto -fwhole-program %COMPILE%
 set COMPILE64=x86_64-w64-mingw32-g++.exe -m64 %COMPILE%

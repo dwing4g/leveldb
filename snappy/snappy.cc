@@ -30,7 +30,16 @@
 #include "snappy-internal.h"
 #include "snappy-sinksource.h"
 
-#if __SSE2__ // defined(__x86_64__) || defined(_M_X64)
+#ifndef SNAPPY_HAVE_SSE2
+#if defined(__SSE2__) || defined(_M_X64) || \
+    (defined(_M_IX86_FP) && _M_IX86_FP >= 2)
+#define SNAPPY_HAVE_SSE2 1
+#else
+#define SNAPPY_HAVE_SSE2 0
+#endif
+#endif
+
+#if SNAPPY_HAVE_SSE2
 #include <emmintrin.h>
 #endif
 #include <stdio.h>
@@ -47,7 +56,6 @@ using internal::COPY_2_BYTE_OFFSET;
 using internal::LITERAL;
 using internal::char_table;
 using internal::kMaximumTagLength;
-using internal::wordmask;
 
 // Any hash function will produce a valid compressed bitstream, but a good
 // hash function reduces the number of collisions and thus yields better
@@ -89,17 +97,21 @@ size_t MaxCompressedLength(size_t source_len) {
 namespace {
 
 void UnalignedCopy64(const void* src, void* dst) {
-  memcpy(dst, src, 8);
+  char tmp[8];
+  memcpy(tmp, src, 8);
+  memcpy(dst, tmp, 8);
 }
 
 void UnalignedCopy128(const void* src, void* dst) {
   // TODO(alkis): Remove this when we upgrade to a recent compiler that emits
   // SSE2 moves for memcpy(dst, src, 16).
-#ifdef __SSE2__
+#if SNAPPY_HAVE_SSE2
   __m128i x = _mm_loadu_si128(static_cast<const __m128i*>(src));
   _mm_storeu_si128(static_cast<__m128i*>(dst), x);
 #else
-  memcpy(dst, src, 16);
+  char tmp[16];
+  memcpy(tmp, src, 16);
+  memcpy(dst, tmp, 16);
 #endif
 }
 
@@ -527,6 +539,10 @@ char* CompressFragment(const char* input,
 }
 }  // end namespace internal
 
+// Called back at avery compression call to trace parameters and sizes.
+static inline void Report(const char *algorithm, size_t compressed_size,
+                          size_t uncompressed_size) {}
+
 // Signature of output types needed by decompression code.
 // The decompression code is templatized on a type that obeys this
 // signature so that we do not pay virtual function call overhead in
@@ -567,6 +583,14 @@ char* CompressFragment(const char* input,
 //   bool TryFastAppend(const char* ip, size_t available, size_t length);
 // };
 
+namespace internal {
+
+// Mapping from i in range [0,4] to a mask to extract the bottom 8*i bits
+static const uint32 wordmask[] = {
+  0u, 0xffu, 0xffffu, 0xffffffu, 0xffffffffu
+};
+
+}  // end namespace internal
 
 // Helper class for decompression
 class SnappyDecompressor {
@@ -638,7 +662,16 @@ class SnappyDecompressor {
     // For position-independent executables, accessing global arrays can be
     // slow.  Move wordmask array onto the stack to mitigate this.
     uint32 wordmask[sizeof(internal::wordmask)/sizeof(uint32)];
-    memcpy(wordmask, internal::wordmask, sizeof(wordmask));
+    // Do not use memcpy to copy internal::wordmask to
+    // wordmask.  LLVM converts stack arrays to global arrays if it detects
+    // const stack arrays and this hurts the performance of position
+    // independent code. This change is temporary and can be reverted when
+    // https://reviews.llvm.org/D30759 is approved.
+    wordmask[0] = internal::wordmask[0];
+    wordmask[1] = internal::wordmask[1];
+    wordmask[2] = internal::wordmask[2];
+    wordmask[3] = internal::wordmask[3];
+    wordmask[4] = internal::wordmask[4];
 
     // We could have put this refill fragment only at the beginning of the loop.
     // However, duplicating it at the end of each branch gives the compiler more
@@ -757,7 +790,7 @@ bool SnappyDecompressor::RefillTag() {
       size_t length;
       const char* src = reader_->Peek(&length);
       if (length == 0) return false;
-      uint32 to_add = min<uint32>(needed - nbuf, length);
+      uint32 to_add = std::min<uint32>(needed - nbuf, length);
       memcpy(scratch_ + nbuf, src, to_add);
       nbuf += to_add;
       reader_->Skip(to_add);
@@ -786,13 +819,18 @@ static bool InternalUncompress(Source* r, Writer* writer) {
   SnappyDecompressor decompressor(r);
   uint32 uncompressed_len = 0;
   if (!decompressor.ReadUncompressedLength(&uncompressed_len)) return false;
-  return InternalUncompressAllTags(&decompressor, writer, uncompressed_len);
+
+  return InternalUncompressAllTags(&decompressor, writer, r->Available(),
+                                   uncompressed_len);
 }
 
 template <typename Writer>
 static bool InternalUncompressAllTags(SnappyDecompressor* decompressor,
                                       Writer* writer,
+                                      uint32 compressed_len,
                                       uint32 uncompressed_len) {
+  Report("snappy_uncompress", compressed_len, uncompressed_len);
+
   writer->SetExpectedLength(uncompressed_len);
 
   // Process the entire input
@@ -809,6 +847,7 @@ bool GetUncompressedLength(Source* source, uint32* result) {
 size_t Compress(Source* reader, Sink* writer) {
   size_t written = 0;
   size_t N = reader->Available();
+  const size_t uncompressed_size = N;
   char ulength[Varint::kMax32];
   char* p = Varint::Encode32(ulength, N);
   writer->Append(ulength, p-ulength);
@@ -823,7 +862,7 @@ size_t Compress(Source* reader, Sink* writer) {
     size_t fragment_size;
     const char* fragment = reader->Peek(&fragment_size);
     assert(fragment_size != 0);  // premature end of input
-    const size_t num_to_read = min(N, kBlockSize);
+    const size_t num_to_read = std::min(N, kBlockSize);
     size_t bytes_read = fragment_size;
 
     size_t pending_advance = 0;
@@ -844,7 +883,7 @@ size_t Compress(Source* reader, Sink* writer) {
 
       while (bytes_read < num_to_read) {
         fragment = reader->Peek(&fragment_size);
-        size_t n = min<size_t>(fragment_size, num_to_read - bytes_read);
+        size_t n = std::min<size_t>(fragment_size, num_to_read - bytes_read);
         memcpy(scratch + bytes_read, fragment, n);
         bytes_read += n;
         reader->Skip(n);
@@ -880,6 +919,8 @@ size_t Compress(Source* reader, Sink* writer) {
     N -= num_to_read;
     reader->Skip(pending_advance);
   }
+
+  Report("snappy_compress", written, uncompressed_size);
 
   delete[] scratch;
   delete[] scratch_output;
@@ -1344,7 +1385,7 @@ bool SnappyScatteredWriter<Allocator>::SlowAppend(const char* ip, size_t len) {
     }
 
     // Make new block
-    size_t bsize = min<size_t>(kBlockSize, expected_ - full_size_);
+    size_t bsize = std::min<size_t>(kBlockSize, expected_ - full_size_);
     op_base_ = allocator_.Allocate(bsize);
     op_ptr_ = op_base_;
     op_limit_ = op_base_ + bsize;
@@ -1401,7 +1442,7 @@ class SnappySinkAllocator {
     size_t size_written = 0;
     size_t block_size;
     for (int i = 0; i < blocks_.size(); ++i) {
-      block_size = min<size_t>(blocks_[i].size, size - size_written);
+      block_size = std::min<size_t>(blocks_[i].size, size - size_written);
       dest_->AppendAndTakeOwnership(blocks_[i].data, block_size,
                                     &SnappySinkAllocator::Deleter, NULL);
       size_written += block_size;
@@ -1446,18 +1487,20 @@ bool Uncompress(Source* compressed, Sink* uncompressed) {
   char* buf = uncompressed->GetAppendBufferVariable(
       1, uncompressed_len, &c, 1, &allocated_size);
 
+  const size_t compressed_len = compressed->Available();
   // If we can get a flat buffer, then use it, otherwise do block by block
   // uncompression
   if (allocated_size >= uncompressed_len) {
     SnappyArrayWriter writer(buf);
-    bool result = InternalUncompressAllTags(
-        &decompressor, &writer, uncompressed_len);
+    bool result = InternalUncompressAllTags(&decompressor, &writer,
+                                            compressed_len, uncompressed_len);
     uncompressed->Append(buf, writer.Produced());
     return result;
   } else {
     SnappySinkAllocator allocator(uncompressed);
     SnappyScatteredWriter<SnappySinkAllocator> writer(allocator);
-    return InternalUncompressAllTags(&decompressor, &writer, uncompressed_len);
+    return InternalUncompressAllTags(&decompressor, &writer, compressed_len,
+                                     uncompressed_len);
   }
 }
 

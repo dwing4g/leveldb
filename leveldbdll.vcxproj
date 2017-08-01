@@ -19,189 +19,43 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="db\builder.cc" />
-    <ClCompile Include="db\c.cc" />
-    <ClCompile Include="db\dbformat.cc" />
-    <ClCompile Include="db\db_impl.cc" />
-    <ClCompile Include="db\db_iter.cc" />
-    <ClCompile Include="db\dumpfile.cc" />
-    <ClCompile Include="db\filename.cc" />
-    <ClCompile Include="db\log_reader.cc" />
-    <ClCompile Include="db\log_writer.cc" />
-    <ClCompile Include="db\memtable.cc" />
-    <ClCompile Include="db\repair.cc" />
-    <ClCompile Include="db\table_cache.cc" />
-    <ClCompile Include="db\version_edit.cc" />
-    <ClCompile Include="db\version_set.cc" />
-    <ClCompile Include="db\write_batch.cc" />
-    <ClCompile Include="port\port_posix.cc" />
-    <ClCompile Include="port\port_posix_sse.cc" />
-    <ClCompile Include="port\vs\pthread\cleanup.c" />
-    <ClCompile Include="port\vs\pthread\global.c" />
-    <ClCompile Include="port\vs\pthread\pthread_cancel.c" />
-    <ClCompile Include="port\vs\pthread\pthread_cond_destroy.c" />
-    <ClCompile Include="port\vs\pthread\pthread_cond_init.c" />
-    <ClCompile Include="port\vs\pthread\pthread_cond_signal.c" />
-    <ClCompile Include="port\vs\pthread\pthread_cond_wait.c" />
-    <ClCompile Include="port\vs\pthread\pthread_equal.c" />
-    <ClCompile Include="port\vs\pthread\pthread_getspecific.c" />
-    <ClCompile Include="port\vs\pthread\pthread_key_create.c" />
-    <ClCompile Include="port\vs\pthread\pthread_key_delete.c" />
-    <ClCompile Include="port\vs\pthread\pthread_kill.c" />
-    <ClCompile Include="port\vs\pthread\pthread_mutex_consistent.c" />
-    <ClCompile Include="port\vs\pthread\pthread_mutex_destroy.c" />
-    <ClCompile Include="port\vs\pthread\pthread_mutex_init.c" />
-    <ClCompile Include="port\vs\pthread\pthread_mutex_lock.c" />
-    <ClCompile Include="port\vs\pthread\pthread_mutex_trylock.c" />
-    <ClCompile Include="port\vs\pthread\pthread_mutex_unlock.c" />
-    <ClCompile Include="port\vs\pthread\pthread_once.c" />
-    <ClCompile Include="port\vs\pthread\pthread_self.c" />
-    <ClCompile Include="port\vs\pthread\pthread_setspecific.c" />
-    <ClCompile Include="port\vs\pthread\pthread_testcancel.c" />
-    <ClCompile Include="port\vs\pthread\pthread_win32_attach_detach_np.c" />
-    <ClCompile Include="port\vs\pthread\ptw32_callUserDestroyRoutines.c" />
-    <ClCompile Include="port\vs\pthread\ptw32_cond_check_need_init.c" />
-    <ClCompile Include="port\vs\pthread\ptw32_MCS_lock.c" />
-    <ClCompile Include="port\vs\pthread\ptw32_mutex_check_need_init.c" />
-    <ClCompile Include="port\vs\pthread\ptw32_new.c" />
-    <ClCompile Include="port\vs\pthread\ptw32_processInitialize.c" />
-    <ClCompile Include="port\vs\pthread\ptw32_processTerminate.c" />
-    <ClCompile Include="port\vs\pthread\ptw32_relmillisecs.c" />
-    <ClCompile Include="port\vs\pthread\ptw32_reuse.c" />
-    <ClCompile Include="port\vs\pthread\ptw32_semwait.c" />
-    <ClCompile Include="port\vs\pthread\ptw32_threadDestroy.c" />
-    <ClCompile Include="port\vs\pthread\ptw32_throw.c" />
-    <ClCompile Include="port\vs\pthread\ptw32_tkAssocCreate.c" />
-    <ClCompile Include="port\vs\pthread\ptw32_tkAssocDestroy.c" />
-    <ClCompile Include="port\vs\pthread\sched_yield.c" />
-    <ClCompile Include="port\vs\pthread\sem_destroy.c" />
-    <ClCompile Include="port\vs\pthread\sem_init.c" />
-    <ClCompile Include="port\vs\pthread\sem_post.c" />
-    <ClCompile Include="port\vs\pthread\sem_post_multiple.c" />
-    <ClCompile Include="port\vs\pthread\sem_timedwait.c" />
-    <ClCompile Include="port\vs\pthread\sem_wait.c" />
-    <ClCompile Include="port\vs\pthread\w32_CancelableWait.c" />
-    <ClCompile Include="snappy\snappy-sinksource.cc" />
-    <ClCompile Include="snappy\snappy-stubs-internal.cc" />
-    <ClCompile Include="snappy\snappy.cc" />
-    <ClCompile Include="table\block.cc" />
-    <ClCompile Include="table\block_builder.cc" />
-    <ClCompile Include="table\filter_block.cc" />
-    <ClCompile Include="table\format.cc" />
-    <ClCompile Include="table\iterator.cc" />
-    <ClCompile Include="table\merger.cc" />
-    <ClCompile Include="table\table.cc" />
-    <ClCompile Include="table\table_builder.cc" />
-    <ClCompile Include="table\two_level_iterator.cc" />
-    <ClCompile Include="util\arena.cc" />
-    <ClCompile Include="util\bloom.cc" />
-    <ClCompile Include="util\cache.cc" />
-    <ClCompile Include="util\coding.cc" />
-    <ClCompile Include="util\comparator.cc" />
-    <ClCompile Include="util\crc32c.cc" />
-    <ClCompile Include="util\env.cc" />
-    <ClCompile Include="util\env_windows.cc" />
-    <ClCompile Include="util\filter_policy.cc" />
-    <ClCompile Include="util\hash.cc" />
-    <ClCompile Include="util\histogram.cc" />
-    <ClCompile Include="util\logging.cc" />
-    <ClCompile Include="util\options.cc" />
-    <ClCompile Include="util\status.cc" />
+    <None Include="leveldb.def">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+      </ExcludedFromBuild>
+    </None>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="db\builder.h" />
-    <ClInclude Include="db\dbformat.h" />
-    <ClInclude Include="db\db_impl.h" />
-    <ClInclude Include="db\db_iter.h" />
-    <ClInclude Include="db\filename.h" />
-    <ClInclude Include="db\log_format.h" />
-    <ClInclude Include="db\log_reader.h" />
-    <ClInclude Include="db\log_writer.h" />
-    <ClInclude Include="db\memtable.h" />
-    <ClInclude Include="db\skiplist.h" />
-    <ClInclude Include="db\snapshot.h" />
-    <ClInclude Include="db\table_cache.h" />
-    <ClInclude Include="db\version_edit.h" />
-    <ClInclude Include="db\version_set.h" />
-    <ClInclude Include="db\write_batch_internal.h" />
-    <ClInclude Include="include\leveldb\c.h" />
-    <ClInclude Include="include\leveldb\cache.h" />
-    <ClInclude Include="include\leveldb\comparator.h" />
-    <ClInclude Include="include\leveldb\db.h" />
-    <ClInclude Include="include\leveldb\dumpfile.h" />
-    <ClInclude Include="include\leveldb\env.h" />
-    <ClInclude Include="include\leveldb\filter_policy.h" />
-    <ClInclude Include="include\leveldb\iterator.h" />
-    <ClInclude Include="include\leveldb\options.h" />
-    <ClInclude Include="include\leveldb\slice.h" />
-    <ClInclude Include="include\leveldb\status.h" />
-    <ClInclude Include="include\leveldb\table.h" />
-    <ClInclude Include="include\leveldb\table_builder.h" />
-    <ClInclude Include="include\leveldb\write_batch.h" />
-    <ClInclude Include="port\atomic_pointer.h" />
-    <ClInclude Include="port\endian.h" />
-    <ClInclude Include="port\port.h" />
-    <ClInclude Include="port\port_posix.h" />
-    <ClInclude Include="port\thread_annotations.h" />
-    <ClInclude Include="port\vs\jni\jni.h" />
-    <ClInclude Include="port\vs\jni\jni_md.h" />
-    <ClInclude Include="port\vs\pthread\config.h" />
-    <ClInclude Include="port\vs\pthread\context.h" />
-    <ClInclude Include="port\vs\pthread\implement.h" />
-    <ClInclude Include="port\vs\pthread\pthread.h" />
-    <ClInclude Include="port\vs\pthread\sched.h" />
-    <ClInclude Include="port\vs\pthread\semaphore.h" />
-    <ClInclude Include="port\vs\sys\time.h" />
-    <ClInclude Include="snappy\snappy-internal.h" />
-    <ClInclude Include="snappy\snappy-sinksource.h" />
-    <ClInclude Include="snappy\snappy-stubs-internal.h" />
-    <ClInclude Include="snappy\snappy-stubs-public.h" />
-    <ClInclude Include="snappy\snappy.h" />
-    <ClInclude Include="table\block.h" />
-    <ClInclude Include="table\block_builder.h" />
-    <ClInclude Include="table\filter_block.h" />
-    <ClInclude Include="table\format.h" />
-    <ClInclude Include="table\iterator_wrapper.h" />
-    <ClInclude Include="table\merger.h" />
-    <ClInclude Include="table\two_level_iterator.h" />
-    <ClInclude Include="util\arena.h" />
-    <ClInclude Include="util\coding.h" />
-    <ClInclude Include="util\crc32c.h" />
-    <ClInclude Include="util\hash.h" />
-    <ClInclude Include="util\histogram.h" />
-    <ClInclude Include="util\logging.h" />
-    <ClInclude Include="util\mutexlock.h" />
-    <ClInclude Include="util\random.h" />
+    <ClCompile Include="util\jni.cc" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
-    <ProjectGuid>{5CADDEB3-A73D-46E5-AF99-05CF64C1FE52}</ProjectGuid>
+    <ProjectGuid>{5CADDEB3-A73D-46E5-AF99-05CF64C1FE53}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>leveldb</RootNamespace>
+    <RootNamespace>leveldbdll</RootNamespace>
     <WindowsTargetPlatformVersion>7.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v141_xp</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v141_xp</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
-    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v141_xp</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
-    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v141_xp</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
@@ -227,33 +81,35 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <TargetName>$(ProjectName)32</TargetName>
+    <TargetName>$(ProjectName)jni32</TargetName>
     <GenerateManifest>false</GenerateManifest>
     <EmbedManifest>false</EmbedManifest>
-    <IntDir>$(SolutionDir)$(Configuration)\</IntDir>
+    <OutDir>$(SolutionDir)$(Configuration)\leveldbdll\</OutDir>
+    <IntDir>$(SolutionDir)$(Configuration)\leveldbdll\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <TargetName>$(ProjectName)64</TargetName>
+    <TargetName>$(ProjectName)jni64</TargetName>
     <GenerateManifest>false</GenerateManifest>
     <EmbedManifest>false</EmbedManifest>
-    <OutDir>$(SolutionDir)$(Configuration)_$(Platform)\</OutDir>
-    <IntDir>$(SolutionDir)$(Configuration)_$(Platform)\</IntDir>
+    <OutDir>$(SolutionDir)$(Configuration)_$(Platform)\leveldbdll\</OutDir>
+    <IntDir>$(SolutionDir)$(Configuration)_$(Platform)\leveldbdll\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <GenerateManifest>false</GenerateManifest>
     <EmbedManifest>false</EmbedManifest>
-    <TargetName>$(ProjectName)32</TargetName>
-    <IntDir>$(SolutionDir)$(Configuration)\</IntDir>
+    <TargetName>$(ProjectName)jni32</TargetName>
+    <OutDir>$(SolutionDir)$(Configuration)\leveldbdll\</OutDir>
+    <IntDir>$(SolutionDir)$(Configuration)\leveldbdll\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <TargetName>$(ProjectName)64</TargetName>
+    <TargetName>$(ProjectName)jni64</TargetName>
     <GenerateManifest>false</GenerateManifest>
     <EmbedManifest>false</EmbedManifest>
-    <OutDir>$(SolutionDir)$(Configuration)_$(Platform)\</OutDir>
-    <IntDir>$(SolutionDir)$(Configuration)_$(Platform)\</IntDir>
+    <OutDir>$(SolutionDir)$(Configuration)_$(Platform)\leveldbdll\</OutDir>
+    <IntDir>$(SolutionDir)$(Configuration)_$(Platform)\leveldbdll\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -266,7 +122,7 @@
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
-      <AdditionalDependencies>kernel32.lib;advapi32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>kernel32.lib;advapi32.lib;Debug\leveldb32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ModuleDefinitionFile>leveldb.def</ModuleDefinitionFile>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
     </Link>
@@ -282,7 +138,7 @@
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
-      <AdditionalDependencies>kernel32.lib;advapi32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>kernel32.lib;advapi32.lib;Debug_x64\leveldb64.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
     </Link>
   </ItemDefinitionGroup>
@@ -311,7 +167,7 @@
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
       <FixedBaseAddress>
       </FixedBaseAddress>
-      <AdditionalDependencies>kernel32.lib;advapi32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>kernel32.lib;advapi32.lib;Release\leveldb32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ModuleDefinitionFile>leveldb.def</ModuleDefinitionFile>
     </Link>
   </ItemDefinitionGroup>
@@ -342,7 +198,7 @@
       </FixedBaseAddress>
       <ModuleDefinitionFile>
       </ModuleDefinitionFile>
-      <AdditionalDependencies>kernel32.lib;advapi32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>kernel32.lib;advapi32.lib;Release_x64\leveldb64.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

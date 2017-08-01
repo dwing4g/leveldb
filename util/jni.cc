@@ -4,7 +4,7 @@
 
 #ifdef ENABLE_JNI
 
-#ifdef WIN32
+#ifdef _WIN32
 #undef _WIN32_WINNT
 #define _WIN32_WINNT 0x500
 #include <windows.h>
@@ -121,7 +121,7 @@ extern "C" JNIEXPORT jbyteArray JNICALL Java_jane_core_StorageLevelDB_leveldb_1g
 	Status s = db->Get(g_ro_cached, Slice((const char*)keyptr, (size_t)keylen), &valstr);
 	jenv->ReleaseByteArrayElements(key, keyptr, JNI_ABORT);
 	if(!s.ok()) return 0;
-	jsize vallen = valstr.size();
+	jsize vallen = (jsize)valstr.size();
 	jbyteArray val = jenv->NewByteArray(vallen);
 	jenv->SetByteArrayRegion(val, 0, vallen, (const jbyte*)valstr.data());
 	return val;
@@ -226,7 +226,7 @@ static int64_t AppendFile(Env& env, const std::string& srcfile, const std::strin
 	if(srcsize < dstsize) dstsize = 0; // overwrite
 	else if(dstsize > 0) // compare file head for more security
 	{
-		size_t checksize = (size_t)(dstsize < FILE_BUF_SIZE ? dstsize : FILE_BUF_SIZE);
+		size_t checksize = (dstsize < FILE_BUF_SIZE ? (size_t)dstsize : FILE_BUF_SIZE);
 		Slice dstslice;
 		char dstbuf[FILE_BUF_SIZE];
 		if(!env.NewSequentialFile(srcfile, &sf).ok() || !sf) return -15;
@@ -242,13 +242,13 @@ static int64_t AppendFile(Env& env, const std::string& srcfile, const std::strin
 	if(dstsize > 0 && !sf->Skip(dstsize).ok()) { delete sf; return -20; }
 #ifdef WIN32
 	WCHAR wbuf[MAX_PATH];
-	wbuf[MultiByteToWideChar(65001, 0, static_cast<LPCSTR>(dstfile.c_str()), dstfile.size(), wbuf, MAX_PATH - 1)] = 0;
+	wbuf[MultiByteToWideChar(65001, 0, static_cast<LPCSTR>(dstfile.c_str()), (int)dstfile.size(), wbuf, MAX_PATH - 1)] = 0;
 	FILE* fp = _wfopen(wbuf, (dstsize == 0 ? L"wb" : L"rb+"));
 #else
 	FILE* fp = fopen(dstfile.c_str(), (dstsize == 0 ? "wb" : "rb+"));
 #endif
 	if(!fp) { delete sf; return -21; }
-	if(dstsize > 0) fseek(fp, dstsize, SEEK_SET);
+	if(dstsize > 0) _fseeki64(fp, (int64_t)dstsize, SEEK_SET);
 	Status s; size_t size; int64_t res = 0;
 	do
 	{
@@ -394,8 +394,8 @@ extern "C" JNIEXPORT jbyteArray JNICALL Java_jane_core_StorageLevelDB_leveldb_1i
 	Iterator* it = (Iterator*)iter;
 	if(!it || !it->Valid()) return 0;
 	const Slice& slice = it->key();
-	jbyteArray key = jenv->NewByteArray(slice.size());
-	jenv->SetByteArrayRegion(key, 0, slice.size(), (const jbyte*)slice.data());
+	jbyteArray key = jenv->NewByteArray((jsize)slice.size());
+	jenv->SetByteArrayRegion(key, 0, (jsize)slice.size(), (const jbyte*)slice.data());
 	it->Next();
 	return key;
 }
@@ -407,8 +407,8 @@ extern "C" JNIEXPORT jbyteArray JNICALL Java_jane_core_StorageLevelDB_leveldb_1i
 	Iterator* it = (Iterator*)iter;
 	if(!it || !it->Valid()) return 0;
 	const Slice& slice = it->key();
-	jbyteArray key = jenv->NewByteArray(slice.size());
-	jenv->SetByteArrayRegion(key, 0, slice.size(), (const jbyte*)slice.data());
+	jbyteArray key = jenv->NewByteArray((jsize)slice.size());
+	jenv->SetByteArrayRegion(key, 0, (jsize)slice.size(), (const jbyte*)slice.data());
 	it->Prev();
 	return key;
 }
@@ -420,8 +420,8 @@ extern "C" JNIEXPORT jbyteArray JNICALL Java_jane_core_StorageLevelDB_leveldb_1i
 	Iterator* it = (Iterator*)iter;
 	if(!it || !it->Valid()) return 0;
 	const Slice& slice = it->value();
-	jbyteArray val = jenv->NewByteArray(slice.size());
-	jenv->SetByteArrayRegion(val, 0, slice.size(), (const jbyte*)slice.data());
+	jbyteArray val = jenv->NewByteArray((jsize)slice.size());
+	jenv->SetByteArrayRegion(val, 0, (jsize)slice.size(), (const jbyte*)slice.data());
 	return val;
 }
 
