@@ -81,7 +81,7 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <TargetName>$(ProjectName)jni32</TargetName>
+    <TargetName>leveldbjni32</TargetName>
     <GenerateManifest>false</GenerateManifest>
     <EmbedManifest>false</EmbedManifest>
     <OutDir>$(SolutionDir)$(Configuration)\leveldbdll\</OutDir>
@@ -89,7 +89,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <TargetName>$(ProjectName)jni64</TargetName>
+    <TargetName>leveldbjni64</TargetName>
     <GenerateManifest>false</GenerateManifest>
     <EmbedManifest>false</EmbedManifest>
     <OutDir>$(SolutionDir)$(Configuration)_$(Platform)\leveldbdll\</OutDir>
@@ -99,13 +99,13 @@
     <LinkIncremental>false</LinkIncremental>
     <GenerateManifest>false</GenerateManifest>
     <EmbedManifest>false</EmbedManifest>
-    <TargetName>$(ProjectName)jni32</TargetName>
+    <TargetName>leveldbjni32</TargetName>
     <OutDir>$(SolutionDir)$(Configuration)\leveldbdll\</OutDir>
     <IntDir>$(SolutionDir)$(Configuration)\leveldbdll\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <TargetName>$(ProjectName)jni64</TargetName>
+    <TargetName>leveldbjni64</TargetName>
     <GenerateManifest>false</GenerateManifest>
     <EmbedManifest>false</EmbedManifest>
     <OutDir>$(SolutionDir)$(Configuration)_$(Platform)\leveldbdll\</OutDir>
