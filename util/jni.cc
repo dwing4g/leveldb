@@ -8,6 +8,8 @@
 #undef _WIN32_WINNT
 #define _WIN32_WINNT 0x500
 #include <windows.h>
+#else
+#define _fseeki64 fseek
 #endif
 
 #include <stdio.h>
