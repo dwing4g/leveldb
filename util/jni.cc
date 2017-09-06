@@ -29,8 +29,8 @@
 
 using namespace leveldb;
 
-static const int	MAX_OPEN_FILES		= 10000;
 static const jint	WRITE_BUFSIZE_MIN	= 1 << 20;
+static const jint	OPEN_FILES_MIN		= 1000;
 static const jint	CACHE_SIZE_MIN		= 1 << 20;
 static const jint	FILE_SIZE_MIN		= 1 << 20;
 static const int	BLOOM_FILTER_BITS	= 10;
@@ -43,7 +43,7 @@ static const FilterPolicy*	g_fp = 0;		// safe for global shared instance
 
 namespace leveldb { port::Mutex g_mutex_backup; }
 
-// public native static long leveldb_open(String path, int write_bufsize, int cache_size, boolean use_snappy);
+// public static native long leveldb_open(String path, int write_bufsize, int cache_size, boolean use_snappy);
 extern "C" JNIEXPORT jlong JNICALL Java_jane_core_StorageLevelDB_leveldb_1open
 	(JNIEnv* jenv, jclass jcls, jstring path, jint write_bufsize, jint cache_size, jboolean use_snappy)
 {
@@ -54,8 +54,6 @@ extern "C" JNIEXPORT jlong JNICALL Java_jane_core_StorageLevelDB_leveldb_1open
 	jenv->ReleaseStringUTFChars(path, pathptr);
 	Options opt;
 	opt.create_if_missing = true;
-	opt.reuse_logs = true;
-	opt.max_open_files = MAX_OPEN_FILES;
 	opt.write_buffer_size = (write_bufsize > WRITE_BUFSIZE_MIN ? write_bufsize : WRITE_BUFSIZE_MIN);
 	opt.block_cache = NewLRUCache(cache_size > CACHE_SIZE_MIN ? cache_size : CACHE_SIZE_MIN);
 	opt.compression = (use_snappy ? kSnappyCompression : kNoCompression);
@@ -67,7 +65,7 @@ extern "C" JNIEXPORT jlong JNICALL Java_jane_core_StorageLevelDB_leveldb_1open
 	return s.ok() ? (jlong)db : 0;
 }
 
-// public native static long leveldb_open2(String path, int write_bufsize, int cache_size, int file_size, boolean use_snappy);
+// public static native long leveldb_open2(String path, int write_bufsize, int cache_size, int file_size, boolean use_snappy);
 extern "C" JNIEXPORT jlong JNICALL Java_jane_core_StorageLevelDB_leveldb_1open2
 	(JNIEnv* jenv, jclass jcls, jstring path, jint write_bufsize, jint cache_size, jint file_size, jboolean use_snappy)
 {
@@ -78,8 +76,6 @@ extern "C" JNIEXPORT jlong JNICALL Java_jane_core_StorageLevelDB_leveldb_1open2
 	jenv->ReleaseStringUTFChars(path, pathptr);
 	Options opt;
 	opt.create_if_missing = true;
-	opt.reuse_logs = true;
-	opt.max_open_files = MAX_OPEN_FILES;
 	opt.write_buffer_size = (write_bufsize > WRITE_BUFSIZE_MIN ? write_bufsize : WRITE_BUFSIZE_MIN);
 	opt.block_cache = NewLRUCache(cache_size > CACHE_SIZE_MIN ? cache_size : CACHE_SIZE_MIN);
 	opt.max_file_size = (file_size > FILE_SIZE_MIN ? file_size : FILE_SIZE_MIN);
@@ -92,7 +88,32 @@ extern "C" JNIEXPORT jlong JNICALL Java_jane_core_StorageLevelDB_leveldb_1open2
 	return s.ok() ? (jlong)db : 0;
 }
 
-// public native static void leveldb_close(long handle);
+// public static native long leveldb_open3(String path, int write_bufsize, int max_open_files, int cache_size, int file_size, boolean use_snappy, boolean reuse_logs);
+extern "C" JNIEXPORT jlong JNICALL Java_jane_core_StorageLevelDB_leveldb_1open3
+	(JNIEnv* jenv, jclass jcls, jstring path, jint write_bufsize, jint max_open_files, jint cache_size, jint file_size, jboolean use_snappy, jboolean reuse_logs)
+{
+	if(!path) return 0;
+	const char* pathptr = jenv->GetStringUTFChars(path, 0);
+	if(!pathptr) return 0;
+	std::string pathstr(pathptr);
+	jenv->ReleaseStringUTFChars(path, pathptr);
+	Options opt;
+	opt.create_if_missing = true;
+	opt.write_buffer_size = (write_bufsize > WRITE_BUFSIZE_MIN ? write_bufsize : WRITE_BUFSIZE_MIN);
+	opt.max_open_files = (max_open_files > OPEN_FILES_MIN ? max_open_files : OPEN_FILES_MIN);
+	opt.block_cache = NewLRUCache(cache_size > CACHE_SIZE_MIN ? cache_size : CACHE_SIZE_MIN);
+	opt.max_file_size = (file_size > FILE_SIZE_MIN ? file_size : FILE_SIZE_MIN);
+	opt.compression = (use_snappy ? kSnappyCompression : kNoCompression);
+	opt.reuse_logs = reuse_logs;
+	opt.filter_policy = (g_fp ? g_fp : (g_fp = NewBloomFilterPolicy(BLOOM_FILTER_BITS)));
+	g_ro_nocached.fill_cache = false;
+	g_wo_sync.sync = true;
+	DB* db = 0;
+	Status s = DB::Open(opt, pathstr, &db);
+	return s.ok() ? (jlong)db : 0;
+}
+
+// public static native void leveldb_close(long handle);
 extern "C" JNIEXPORT void JNICALL Java_jane_core_StorageLevelDB_leveldb_1close
 	(JNIEnv* jenv, jclass jcls, jlong handle)
 {
@@ -106,7 +127,7 @@ extern "C" JNIEXPORT void JNICALL Java_jane_core_StorageLevelDB_leveldb_1close
 	}
 }
 
-// public native static byte[] leveldb_get(long handle, byte[] key, int keylen); // return null for not found
+// public static native byte[] leveldb_get(long handle, byte[] key, int keylen); // return null for not found
 extern "C" JNIEXPORT jbyteArray JNICALL Java_jane_core_StorageLevelDB_leveldb_1get
 	(JNIEnv* jenv, jclass jcls, jlong handle, jbyteArray key, jint keylen)
 {
@@ -127,7 +148,7 @@ extern "C" JNIEXPORT jbyteArray JNICALL Java_jane_core_StorageLevelDB_leveldb_1g
 	return val;
 }
 
-// public native static int leveldb_write(long handle, Iterator<Entry<Octets, Octets>> it); // return 0 for ok
+// public static native int leveldb_write(long handle, Iterator<Entry<Octets, Octets>> it); // return 0 for ok
 extern "C" JNIEXPORT jint JNICALL Java_jane_core_StorageLevelDB_leveldb_1write
 	(JNIEnv* jenv, jclass jcls, jlong handle, jobject it)
 {
@@ -264,7 +285,7 @@ static int64_t AppendFile(Env& env, const std::string& srcfile, const std::strin
 	return res;
 }
 
-// public native static long leveldb_backup(long handle, String srcpath, String dstpath, String datetime); // return byte-size of copied data
+// public static native long leveldb_backup(long handle, String srcpath, String dstpath, String datetime); // return byte-size of copied data
 extern "C" JNIEXPORT jlong JNICALL Java_jane_core_StorageLevelDB_leveldb_1backup
 	(JNIEnv* jenv, jclass jcls, jlong handle, jstring srcpath, jstring dstpath, jstring datetime)
 {
@@ -339,7 +360,7 @@ extern "C" JNIEXPORT jlong JNICALL Java_jane_core_StorageLevelDB_leveldb_1backup
 	return n;
 }
 
-// public native static long leveldb_iter_new(long handle, byte[] key, int keylen, int type); // type=0|1|2|3: <|<=|>=|>key
+// public static native long leveldb_iter_new(long handle, byte[] key, int keylen, int type); // type=0|1|2|3: <|<=|>=|>key
 extern "C" JNIEXPORT jlong JNICALL Java_jane_core_StorageLevelDB_leveldb_1iter_1new
 	(JNIEnv* jenv, jclass jcls, jlong handle, jbyteArray key, jint keylen, jint type)
 {
@@ -380,14 +401,14 @@ extern "C" JNIEXPORT jlong JNICALL Java_jane_core_StorageLevelDB_leveldb_1iter_1
 	return (jlong)it;
 }
 
-// public native static void leveldb_iter_delete(long iter);
+// public static native void leveldb_iter_delete(long iter);
 extern "C" JNIEXPORT void JNICALL Java_jane_core_StorageLevelDB_leveldb_1iter_1delete
 	(JNIEnv* jenv, jclass jcls, jlong iter)
 {
 	delete (Iterator*)iter;
 }
 
-// public native static byte[] leveldb_iter_next(long iter); // return cur-key(maybe null) and do next
+// public static native byte[] leveldb_iter_next(long iter); // return cur-key(maybe null) and do next
 extern "C" JNIEXPORT jbyteArray JNICALL Java_jane_core_StorageLevelDB_leveldb_1iter_1next
 	(JNIEnv* jenv, jclass jcls, jlong iter)
 {
@@ -400,7 +421,7 @@ extern "C" JNIEXPORT jbyteArray JNICALL Java_jane_core_StorageLevelDB_leveldb_1i
 	return key;
 }
 
-// public native static byte[] leveldb_iter_prev(long iter); // return cur-key(maybe null) and do prev
+// public static native byte[] leveldb_iter_prev(long iter); // return cur-key(maybe null) and do prev
 extern "C" JNIEXPORT jbyteArray JNICALL Java_jane_core_StorageLevelDB_leveldb_1iter_1prev
 	(JNIEnv* jenv, jclass jcls, jlong iter)
 {
@@ -413,7 +434,7 @@ extern "C" JNIEXPORT jbyteArray JNICALL Java_jane_core_StorageLevelDB_leveldb_1i
 	return key;
 }
 
-// public native static byte[] leveldb_iter_value(long iter); // return cur-value(maybe null)
+// public static native byte[] leveldb_iter_value(long iter); // return cur-value(maybe null)
 extern "C" JNIEXPORT jbyteArray JNICALL Java_jane_core_StorageLevelDB_leveldb_1iter_1value
 	(JNIEnv* jenv, jclass jcls, jlong iter)
 {
@@ -425,7 +446,7 @@ extern "C" JNIEXPORT jbyteArray JNICALL Java_jane_core_StorageLevelDB_leveldb_1i
 	return val;
 }
 
-// public native static boolean leveldb_compact(long handle, byte[] key_from, int key_from_len, byte[] key_to, int key_to_len);
+// public static native boolean leveldb_compact(long handle, byte[] key_from, int key_from_len, byte[] key_to, int key_to_len);
 extern "C" JNIEXPORT jboolean JNICALL Java_jane_core_StorageLevelDB_leveldb_1compact
 	(JNIEnv* jenv, jclass jcls, jlong handle, jbyteArray key_from, jint key_from_len, jbyteArray key_to, jint key_to_len)
 {
@@ -467,7 +488,7 @@ extern "C" JNIEXPORT jboolean JNICALL Java_jane_core_StorageLevelDB_leveldb_1com
 	return JNI_TRUE;
 }
 
-// public native static String leveldb_property(long handle, String property);
+// public static native String leveldb_property(long handle, String property);
 extern "C" JNIEXPORT jstring JNICALL Java_jane_core_StorageLevelDB_leveldb_1property
 	(JNIEnv* jenv, jclass jcls, jlong handle, jstring property)
 {
