@@ -104,12 +104,12 @@ testutil.o \
 testharness.o \
 "
 
-COMPILE="g++ -DOS_LINUX -DLEVELDB_PLATFORM_POSIX -DLEVELDB_PLATFORM_POSIX_SSE -DSNAPPY -DENABLE_JNI -DNDEBUG -I. -Iinclude -Isnappy -I${JAVA_HOME}/include -I${JAVA_HOME}/include/linux -m64 -O3 -ffast-math -fweb -fomit-frame-pointer -fmerge-all-constants -fno-builtin-memcmp -fPIC -pipe -pthread"
+COMPILE="g++ -DOS_LINUX=1 -DLEVELDB_PLATFORM_POSIX=1 -DLEVELDB_PLATFORM_POSIX_SSE=1 -DHAVE_SNAPPY=1 -DENABLE_JNI -DNDEBUG -Dconstexpr= -I. -Iinclude -Isnappy -I${JAVA_HOME}/include -I${JAVA_HOME}/include/linux -m64 -O3 -ffast-math -fweb -fomit-frame-pointer -fmerge-all-constants -fno-builtin-memcmp -fPIC -pipe -pthread"
 
 $COMPILE -c -msse4.2 -o port_posix_sse.o port/port_posix_sse.cc
 
 echo building libleveldbjni.so ...
-$COMPILE -shared -Wl,-soname -Wl,libleveldbjni.so -o libleveldbjni.so $CORE_FILES port_posix_sse.o
+$COMPILE -shared -fvisibility=hidden -Wl,-soname -Wl,libleveldbjni.so -o libleveldbjni.so $CORE_FILES port_posix_sse.o
 
 echo building libleveldb.a ...
 $COMPILE -c $CORE_FILES $TEST_FILES

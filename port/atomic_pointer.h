@@ -24,6 +24,7 @@
 #endif
 #ifdef OS_WIN
 #include <windows.h>
+#undef DeleteFile
 #endif
 #ifdef __APPLE__
 #include <libkern/OSAtomic.h>

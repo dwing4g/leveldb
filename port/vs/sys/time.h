@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Windows.h>
+#include <windows.h>
 #include <stdint.h> // portable: uint64_t   MSVC: __int64 
 
 // MSVC defines this in winsock2.h!?
