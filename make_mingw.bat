@@ -45,6 +45,8 @@ util/logging.cc ^
 util/options.cc ^
 util/status.cc ^
 port/port_posix.cc ^
+crc32c/crc32c.cc ^
+crc32c/crc32c_portable.cc ^
 snappy/snappy.cc ^
 snappy/snappy-sinksource.cc ^
 snappy/snappy-stubs-internal.cc
@@ -94,36 +96,38 @@ logging.o ^
 options.o ^
 status.o ^
 port_posix.o ^
+crc32c.o ^
+crc32c_portable.o ^
 snappy.o ^
 snappy-sinksource.o ^
 snappy-stubs-internal.o ^
 testutil.o ^
 testharness.o
 
-set COMPILE=-DOS_WIN=1 -DLEVELDB_PLATFORM_POSIX=1 -DLEVELDB_PLATFORM_POSIX_SSE=1 -DHAVE_SNAPPY=1 -DENABLE_JNI -DLEVELDB_EXPORT= -D_POSIX -D__USE_MINGW_ANSI_STDIO=1 -DNDEBUG -I. -Iinclude -Isnappy -Iport -Iport/vs/jni -Ofast -ffast-math -fweb -fomit-frame-pointer -fmerge-all-constants -fno-builtin-memcmp -pipe -pthread -static -lpthread
+set COMPILE=-std=c++0x -DOS_WIN=1 -DLEVELDB_PLATFORM_POSIX=1 -DHAVE_CRC32C=1 -DHAVE_SNAPPY=1 -DHAVE_BUILTIN_EXPECT=1 -DHAVE_BYTESWAP_H=1 -DHAVE_BUILTIN_CTZ=1 -DENABLE_JNI -DLEVELDB_EXPORT= -D_POSIX -D__USE_MINGW_ANSI_STDIO=1 -DNDEBUG -I. -Iinclude -Isnappy -Iport -Iport/vs/jni -Ofast -ffast-math -fweb -fomit-frame-pointer -fmerge-all-constants -fno-builtin-memcmp -pipe -pthread -static -lpthread
 
 set COMPILE32=i686-w64-mingw32-g++.exe -m32 -march=i686 -flto -fwhole-program %COMPILE%
 set COMPILE64=x86_64-w64-mingw32-g++.exe -m64 %COMPILE%
 
-%COMPILE32% -c -msse4.2 -o port_posix_sse_32.o port/port_posix_sse.cc
-%COMPILE64% -c -msse4.2 -o port_posix_sse_64.o port/port_posix_sse.cc
+%COMPILE32% -c -msse4.2 -o crc32c_sse42_32.o crc32c/crc32c_sse42.cc
+%COMPILE64% -c -msse4.2 -o crc32c_sse42_64.o crc32c/crc32c_sse42.cc
 
 echo building leveldbjni32.dll ...
-%COMPILE32% -shared -Wl,--image-base,0x10000000 -Wl,--kill-at -Wl,-soname -Wl,leveldbjni32.dll -o leveldbjni32.dll %CORE_FILES% port_posix_sse_32.o
+%COMPILE32% -shared -Wl,--image-base,0x10000000 -Wl,--kill-at -Wl,-soname -Wl,leveldbjni32.dll -o leveldbjni32.dll %CORE_FILES% crc32c_sse42_32.o
 
 echo building leveldbjni64.dll ...
-%COMPILE64% -shared -Wl,--image-base,0x10000000 -Wl,--kill-at -Wl,-soname -Wl,leveldbjni64.dll -o leveldbjni64.dll %CORE_FILES% port_posix_sse_64.o
+%COMPILE64% -shared -Wl,--image-base,0x10000000 -Wl,--kill-at -Wl,-soname -Wl,leveldbjni64.dll -o leveldbjni64.dll %CORE_FILES% crc32c_sse42_64.o
 
 echo building db-tools ...
-%COMPILE32% -o leveldbutil32.exe db/leveldbutil.cc %CORE_FILES% %TEST_FILES% port_posix_sse_32.o
-%COMPILE64% -o leveldbutil64.exe db/leveldbutil.cc %CORE_FILES% %TEST_FILES% port_posix_sse_64.o
-%COMPILE32% -o db_bench32.exe    db/db_bench.cc    %CORE_FILES% %TEST_FILES% port_posix_sse_32.o
-%COMPILE64% -o db_bench64.exe    db/db_bench.cc    %CORE_FILES% %TEST_FILES% port_posix_sse_64.o
-%COMPILE32% -o db_test32.exe     db/db_test.cc     %CORE_FILES% %TEST_FILES% port_posix_sse_32.o
-%COMPILE64% -o db_test64.exe     db/db_test.cc     %CORE_FILES% %TEST_FILES% port_posix_sse_64.o
-%COMPILE32% -o env_test32.exe    util/env_test.cc  %CORE_FILES% %TEST_FILES% port_posix_sse_32.o
-%COMPILE64% -o env_test64.exe    util/env_test.cc  %CORE_FILES% %TEST_FILES% port_posix_sse_64.o
+%COMPILE32% -o leveldbutil32.exe db/leveldbutil.cc %CORE_FILES% %TEST_FILES% crc32c_sse42_32.o
+%COMPILE64% -o leveldbutil64.exe db/leveldbutil.cc %CORE_FILES% %TEST_FILES% crc32c_sse42_64.o
+%COMPILE32% -o db_bench32.exe    db/db_bench.cc    %CORE_FILES% %TEST_FILES% crc32c_sse42_32.o
+%COMPILE64% -o db_bench64.exe    db/db_bench.cc    %CORE_FILES% %TEST_FILES% crc32c_sse42_64.o
+%COMPILE32% -o db_test32.exe     db/db_test.cc     %CORE_FILES% %TEST_FILES% crc32c_sse42_32.o
+%COMPILE64% -o db_test64.exe     db/db_test.cc     %CORE_FILES% %TEST_FILES% crc32c_sse42_64.o
+%COMPILE32% -o env_test32.exe    util/env_test.cc  %CORE_FILES% %TEST_FILES% crc32c_sse42_32.o
+%COMPILE64% -o env_test64.exe    util/env_test.cc  %CORE_FILES% %TEST_FILES% crc32c_sse42_64.o
 
-del port_posix_sse_??.o
+del crc32c_sse42_??.o
 
 pause

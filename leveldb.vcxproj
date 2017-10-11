@@ -19,6 +19,9 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="crc32c\crc32c.cc" />
+    <ClCompile Include="crc32c\crc32c_portable.cc" />
+    <ClCompile Include="crc32c\crc32c_sse42.cc" />
     <ClCompile Include="db\builder.cc" />
     <ClCompile Include="db\c.cc" />
     <ClCompile Include="db\dbformat.cc" />
@@ -34,7 +37,6 @@
     <ClCompile Include="db\version_edit.cc" />
     <ClCompile Include="db\version_set.cc" />
     <ClCompile Include="db\write_batch.cc" />
-    <ClCompile Include="port\port_posix_sse.cc" />
     <ClCompile Include="port\vs\port_cpp11.cc" />
     <ClCompile Include="snappy\snappy-sinksource.cc" />
     <ClCompile Include="snappy\snappy-stubs-internal.cc" />
@@ -53,7 +55,12 @@
     <ClCompile Include="util\cache.cc" />
     <ClCompile Include="util\coding.cc" />
     <ClCompile Include="util\comparator.cc" />
-    <ClCompile Include="util\crc32c.cc" />
+    <ClCompile Include="util\crc32c.cc">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)crc32.obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)crc32.obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)crc32.obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)crc32.obj</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="util\env.cc" />
     <ClCompile Include="util\env_windows.cc" />
     <ClCompile Include="util\filter_policy.cc" />
@@ -64,6 +71,11 @@
     <ClCompile Include="util\status.cc" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="crc32c\crc32c.h" />
+    <ClInclude Include="crc32c\crc32c_config.h" />
+    <ClInclude Include="crc32c\crc32c_internal.h" />
+    <ClInclude Include="crc32c\crc32c_sse42.h" />
+    <ClInclude Include="crc32c\crc32c_sse42_check.h" />
     <ClInclude Include="db\builder.h" />
     <ClInclude Include="db\dbformat.h" />
     <ClInclude Include="db\db_impl.h" />
@@ -211,7 +223,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;LEVELDB_EXPORTS;OS_WIN;COMPILER_MSVC;LEVELDB_PLATFORM_POSIX=1;LEVELDB_PLATFORM_POSIX_SSE=1;HAVE_SNAPPY=1;ENABLE_JNI;LEVELDB_EXPORT=;WIN32_LEAN_AND_MEAN;NOMINMAX;HAVE_PTW32_CONFIG_H;_CRT_SECURE_NO_WARNINGS;PTW32_STATIC_LIB;ssize_t=size_t;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;LEVELDB_EXPORTS;OS_WIN;COMPILER_MSVC;LEVELDB_PLATFORM_POSIX=1;HAVE_CRC32C=1;HAVE_SNAPPY=1;ENABLE_JNI;LEVELDB_EXPORT=;WIN32_LEAN_AND_MEAN;NOMINMAX;HAVE_PTW32_CONFIG_H;_CRT_SECURE_NO_WARNINGS;PTW32_STATIC_LIB;ssize_t=size_t;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>.;include;port;port\vs;port\vs\jni;snappy</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
@@ -227,7 +239,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>_DEBUG;_WINDOWS;_USRDLL;LEVELDB_EXPORTS;OS_WIN;COMPILER_MSVC;LEVELDB_PLATFORM_POSIX=1;LEVELDB_PLATFORM_POSIX_SSE=1;HAVE_SNAPPY=1;ENABLE_JNI;LEVELDB_EXPORT=;WIN32_LEAN_AND_MEAN;NOMINMAX;HAVE_PTW32_CONFIG_H;_CRT_SECURE_NO_WARNINGS;PTW32_STATIC_LIB;ssize_t=size_t;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_WINDOWS;_USRDLL;LEVELDB_EXPORTS;OS_WIN;COMPILER_MSVC;LEVELDB_PLATFORM_POSIX=1;HAVE_CRC32C=1;HAVE_SNAPPY=1;ENABLE_JNI;LEVELDB_EXPORT=;WIN32_LEAN_AND_MEAN;NOMINMAX;HAVE_PTW32_CONFIG_H;_CRT_SECURE_NO_WARNINGS;PTW32_STATIC_LIB;ssize_t=size_t;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>.;include;port;port\vs;port\vs\jni;snappy</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
@@ -244,7 +256,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;LEVELDB_EXPORTS;OS_WIN;COMPILER_MSVC;LEVELDB_PLATFORM_POSIX=1;LEVELDB_PLATFORM_POSIX_SSE=1;HAVE_SNAPPY=1;ENABLE_JNI;LEVELDB_EXPORT=;WIN32_LEAN_AND_MEAN;NOMINMAX;HAVE_PTW32_CONFIG_H;_CRT_SECURE_NO_WARNINGS;PTW32_STATIC_LIB;ssize_t=size_t;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;LEVELDB_EXPORTS;OS_WIN;COMPILER_MSVC;LEVELDB_PLATFORM_POSIX=1;HAVE_CRC32C=1;HAVE_SNAPPY=1;ENABLE_JNI;LEVELDB_EXPORT=;WIN32_LEAN_AND_MEAN;NOMINMAX;HAVE_PTW32_CONFIG_H;_CRT_SECURE_NO_WARNINGS;PTW32_STATIC_LIB;ssize_t=size_t;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <DebugInformationFormat>None</DebugInformationFormat>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
@@ -273,7 +285,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>NDEBUG;_WINDOWS;_USRDLL;LEVELDB_EXPORTS;OS_WIN;COMPILER_MSVC;LEVELDB_PLATFORM_POSIX=1;LEVELDB_PLATFORM_POSIX_SSE=1;HAVE_SNAPPY=1;ENABLE_JNI;LEVELDB_EXPORT=;WIN32_LEAN_AND_MEAN;NOMINMAX;HAVE_PTW32_CONFIG_H;_CRT_SECURE_NO_WARNINGS;PTW32_STATIC_LIB;ssize_t=size_t;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_WINDOWS;_USRDLL;LEVELDB_EXPORTS;OS_WIN;COMPILER_MSVC;LEVELDB_PLATFORM_POSIX=1;HAVE_CRC32C=1;HAVE_SNAPPY=1;ENABLE_JNI;LEVELDB_EXPORT=;WIN32_LEAN_AND_MEAN;NOMINMAX;HAVE_PTW32_CONFIG_H;_CRT_SECURE_NO_WARNINGS;PTW32_STATIC_LIB;ssize_t=size_t;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>.;include;port;port\vs;port\vs\jni;snappy</AdditionalIncludeDirectories>
       <DebugInformationFormat>None</DebugInformationFormat>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>

@@ -263,7 +263,7 @@ static int64_t AppendFile(Env& env, const std::string& srcfile, const std::strin
 	}
 	if(!env.NewSequentialFile(srcfile, &sf).ok() || !sf) return -19;
 	if(dstsize > 0 && !sf->Skip(dstsize).ok()) { delete sf; return -20; }
-#ifdef WIN32
+#ifdef _WIN32
 	WCHAR wbuf[MAX_PATH];
 	wbuf[MultiByteToWideChar(65001, 0, static_cast<LPCSTR>(dstfile.c_str()), (int)dstfile.size(), wbuf, MAX_PATH - 1)] = 0;
 	FILE* fp = _wfopen(wbuf, (dstsize == 0 ? L"wb" : L"rb+"));

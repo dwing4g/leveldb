@@ -28,6 +28,9 @@
     <Filter Include="port\vs\sys">
       <UniqueIdentifier>{0de03e6c-4957-4c35-9157-e59c0558bebe}</UniqueIdentifier>
     </Filter>
+    <Filter Include="crc32c">
+      <UniqueIdentifier>{5ba1b656-fe62-4c9b-b0c9-efbeda80c730}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="db\builder.cc">
@@ -153,11 +156,17 @@
     <ClCompile Include="util\status.cc">
       <Filter>util</Filter>
     </ClCompile>
-    <ClCompile Include="port\port_posix_sse.cc">
-      <Filter>port</Filter>
-    </ClCompile>
     <ClCompile Include="port\vs\port_cpp11.cc">
       <Filter>port\vs</Filter>
+    </ClCompile>
+    <ClCompile Include="crc32c\crc32c.cc">
+      <Filter>crc32c</Filter>
+    </ClCompile>
+    <ClCompile Include="crc32c\crc32c_portable.cc">
+      <Filter>crc32c</Filter>
+    </ClCompile>
+    <ClCompile Include="crc32c\crc32c_sse42.cc">
+      <Filter>crc32c</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -334,6 +343,21 @@
     </ClInclude>
     <ClInclude Include="port\port_posix.h">
       <Filter>port</Filter>
+    </ClInclude>
+    <ClInclude Include="crc32c\crc32c.h">
+      <Filter>crc32c</Filter>
+    </ClInclude>
+    <ClInclude Include="crc32c\crc32c_config.h">
+      <Filter>crc32c</Filter>
+    </ClInclude>
+    <ClInclude Include="crc32c\crc32c_internal.h">
+      <Filter>crc32c</Filter>
+    </ClInclude>
+    <ClInclude Include="crc32c\crc32c_sse42.h">
+      <Filter>crc32c</Filter>
+    </ClInclude>
+    <ClInclude Include="crc32c\crc32c_sse42_check.h">
+      <Filter>crc32c</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
