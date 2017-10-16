@@ -113,7 +113,7 @@ $COMPILE -c          -o crc32c_.o      crc32c/crc32c.cc
 $COMPILE -c -msse4.2 -o crc32c_sse42.o crc32c/crc32c_sse42.cc
 
 echo building libleveldbjni.so ...
-$COMPILE -shared -fvisibility=hidden -Wl,-soname -Wl,libleveldbjni.so -o libleveldbjni.so $CORE_FILES crc32c/crc32c.cc crc32c_sse42.o
+$COMPILE -DLEVELDB_SHARED_LIBRARY=1 -DLEVELDB_COMPILE_LIBRARY=1 -shared -fvisibility=hidden -Wl,-soname -Wl,libleveldbjni.so -o libleveldbjni.so $CORE_FILES crc32c/crc32c.cc crc32c_sse42.o
 
 echo building libleveldb.a ...
 $COMPILE -c $CORE_FILES $TEST_FILES
