@@ -175,6 +175,7 @@ extern "C" JNIEXPORT jint JNICALL Java_jane_core_StorageLevelDB_leveldb_1write
 		cls_it = (jclass)jenv->NewGlobalRef(cls_it);
 		cls_entry = (jclass)jenv->NewGlobalRef(cls_entry);
 		cls_octets = (jclass)jenv->NewGlobalRef(cls_octets);
+		if(!cls_it || !cls_entry || !cls_octets) return s_err = 2;
 		mid_hasNext = jenv->GetMethodID(cls_it, "hasNext", "()Z");
 		mid_next = jenv->GetMethodID(cls_it, "next", "()Ljava/lang/Object;");
 		mid_getKey = jenv->GetMethodID(cls_entry, "getKey", "()Ljava/lang/Object;");
@@ -498,6 +499,7 @@ extern "C" JNIEXPORT jstring JNICALL Java_jane_core_StorageLevelDB_leveldb_1prop
 	if(!db) return 0;
 	std::string result;
 	const char* propptr = jenv->GetStringUTFChars(property, 0);
+	if(!propptr) return 0;
 	bool r = db->GetProperty(Slice(propptr), &result);
 	jenv->ReleaseStringUTFChars(property, propptr);
 	return r ? jenv->NewStringUTF(result.c_str()) : 0;
