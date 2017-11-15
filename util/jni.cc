@@ -47,6 +47,31 @@ static const FilterPolicy*	g_fp = 0;		// safe for global shared instance
 
 namespace leveldb { port::Mutex g_mutex_backup; }
 
+template<int N>
+class TempBuffer
+{
+	char* heap;
+	char stack[N];
+	int heapSize;
+public:
+	TempBuffer() : heap(0) {}
+	~TempBuffer()
+	{
+		if(heap) delete[] heap;
+	}
+
+	char* get(int size)
+	{
+		if(size <= N) return stack;
+		if(heap)
+		{
+			if(size <= heapSize) return heap;
+			delete[] heap;
+		}
+		return heap = new char[heapSize = size];
+	}
+};
+
 // public static native long leveldb_open(String path, int write_bufsize, int cache_size, boolean use_snappy);
 extern "C" JNIEXPORT jlong JNICALL DEF_JAVA(leveldb_1open)
 	(JNIEnv* jenv, jclass jcls, jstring path, jint write_bufsize, jint cache_size, jboolean use_snappy)
@@ -140,11 +165,12 @@ extern "C" JNIEXPORT jbyteArray JNICALL DEF_JAVA(leveldb_1get)
 	jsize m = jenv->GetArrayLength(key);
 	if(keylen > m) keylen = m;
 	if(keylen <= 0) return 0;
-	jbyte* keyptr = jenv->GetByteArrayElements(key, 0);
+	TempBuffer<3804> keyBuf;
+	char* keyptr = keyBuf.get(keylen);
 	if(!keyptr) return 0;
+	jenv->GetByteArrayRegion(key, 0, keylen, (jbyte*)keyptr);
 	std::string valstr;
-	Status s = db->Get(g_ro_cached, Slice((const char*)keyptr, (size_t)keylen), &valstr);
-	jenv->ReleaseByteArrayElements(key, keyptr, JNI_ABORT);
+	Status s = db->Get(g_ro_cached, Slice(keyptr, (size_t)keylen), &valstr);
 	if(!s.ok()) return 0;
 	jsize vallen = (jsize)valstr.size();
 	jbyteArray val = jenv->NewByteArray(vallen);
@@ -190,6 +216,8 @@ extern "C" JNIEXPORT jint JNICALL DEF_JAVA(leveldb_1write)
 	else if(s_err > 0) return s_err;
 	if(jenv->IsInstanceOf(it, cls_it) == JNI_FALSE) return 4;
 	WriteBatch wb;
+	TempBuffer<204> keyBuf;
+	TempBuffer<3604> valBuf;
 	while(jenv->CallBooleanMethod(it, mid_hasNext) == JNI_TRUE)
 	{
 		jobject entry = jenv->CallObjectMethod(it, mid_next);
@@ -200,9 +228,10 @@ extern "C" JNIEXPORT jint JNICALL DEF_JAVA(leveldb_1write)
 			jint keylen = jenv->GetIntField(key, fid_count);
 			if(keybuf && keylen > 0)
 			{
-				jbyte* keyptr = jenv->GetByteArrayElements(keybuf, 0);
+				char* keyptr = keyBuf.get(keylen);
 				if(keyptr)
 				{
+					jenv->GetByteArrayRegion(keybuf, 0, keylen, (jbyte*)keyptr);
 					jobject val = jenv->CallObjectMethod(entry, mid_getValue);
 					if(val)
 					{
@@ -210,19 +239,18 @@ extern "C" JNIEXPORT jint JNICALL DEF_JAVA(leveldb_1write)
 						jint vallen = jenv->GetIntField(val, fid_count);
 						if(valbuf && vallen > 0)
 						{
-							jbyte* valptr = jenv->GetByteArrayElements(valbuf, 0);
+							char* valptr = valBuf.get(vallen);
 							if(valptr)
 							{
-								wb.Put(Slice((const char*)keyptr, (size_t)keylen), Slice((const char*)valptr, (size_t)vallen));
-								jenv->ReleaseByteArrayElements(valbuf, valptr, JNI_ABORT);
+								jenv->GetByteArrayRegion(valbuf, 0, vallen, (jbyte*)valptr);
+								wb.Put(Slice(keyptr, (size_t)keylen), Slice(valptr, (size_t)vallen));
 							}
 						}
 						else
-							wb.Delete(Slice((const char*)keyptr, (size_t)keylen));
+							wb.Delete(Slice(keyptr, (size_t)keylen));
 					}
 					else
-						wb.Delete(Slice((const char*)keyptr, (size_t)keylen));
-					jenv->ReleaseByteArrayElements(keybuf, keyptr, JNI_ABORT);
+						wb.Delete(Slice(keyptr, (size_t)keylen));
 				}
 			}
 		}
@@ -383,9 +411,11 @@ extern "C" JNIEXPORT jlong JNICALL DEF_JAVA(leveldb_1iter_1new)
 		}
 		else
 		{
-			jbyte* keyptr = jenv->GetByteArrayElements(key, 0);
+			TempBuffer<3804> keyBuf;
+			char* keyptr = keyBuf.get(keylen);
 			if(!keyptr) { delete it; return 0; }
-			Slice slice((const char*)keyptr, (size_t)keylen);
+			jenv->GetByteArrayRegion(key, 0, keylen, (jbyte*)keyptr);
+			Slice slice(keyptr, (size_t)keylen);
 			it->Seek(slice);
 			if(it->Valid())
 			{
@@ -400,7 +430,6 @@ extern "C" JNIEXPORT jlong JNICALL DEF_JAVA(leveldb_1iter_1new)
 			}
 			else if(type < 2)
 				it->SeekToLast();
-			jenv->ReleaseByteArrayElements(key, keyptr, JNI_ABORT);
 		}
 	}
 	return (jlong)it;
@@ -457,20 +486,19 @@ extern "C" JNIEXPORT jboolean JNICALL DEF_JAVA(leveldb_1compact)
 {
 	DB* db = (DB*)handle;
 	if(!db) return JNI_FALSE;
-	std::string fromstr, tostr;
 	Slice from, to;
+	TempBuffer<1904> keyFromBuf, keyToBuf;
 	if(key_from)
 	{
 		jsize m = jenv->GetArrayLength(key_from);
 		if(key_from_len > m) key_from_len = m;
 		if(key_from_len > 0)
 		{
-			jbyte* keyptr = jenv->GetByteArrayElements(key_from, 0);
+			char* keyptr = keyFromBuf.get(key_from_len);
 			if(keyptr)
 			{
-				fromstr.assign((const char*)keyptr, key_from_len);
-				from = Slice(fromstr);
-				jenv->ReleaseByteArrayElements(key_from, keyptr, JNI_ABORT);
+				jenv->GetByteArrayRegion(key_from, 0, key_from_len, (jbyte*)keyptr);
+				from = Slice(keyptr, key_from_len);
 			}
 		}
 	}
@@ -480,12 +508,11 @@ extern "C" JNIEXPORT jboolean JNICALL DEF_JAVA(leveldb_1compact)
 		if(key_to_len > m) key_to_len = m;
 		if(key_to_len > 0)
 		{
-			jbyte* keyptr = jenv->GetByteArrayElements(key_to, 0);
+			char* keyptr = keyToBuf.get(key_to_len);
 			if(keyptr)
 			{
-				tostr.assign((const char*)keyptr, key_to_len);
-				from = Slice(tostr);
-				jenv->ReleaseByteArrayElements(key_to, keyptr, JNI_ABORT);
+				jenv->GetByteArrayRegion(key_to, 0, key_to_len, (jbyte*)keyptr);
+				to = Slice(keyptr, key_to_len);
 			}
 		}
 	}
