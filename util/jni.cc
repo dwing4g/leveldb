@@ -29,6 +29,8 @@
 #include "table/format.h"
 #include "util/coding.h"
 
+#define DEF_JAVA(F) Java_jane_core_StorageLevelDB_ ## F
+
 using namespace leveldb;
 
 static const jint	WRITE_BUFSIZE_MIN	= 1 << 20;
@@ -46,7 +48,7 @@ static const FilterPolicy*	g_fp = 0;		// safe for global shared instance
 namespace leveldb { port::Mutex g_mutex_backup; }
 
 // public static native long leveldb_open(String path, int write_bufsize, int cache_size, boolean use_snappy);
-extern "C" JNIEXPORT jlong JNICALL Java_jane_core_StorageLevelDB_leveldb_1open
+extern "C" JNIEXPORT jlong JNICALL DEF_JAVA(leveldb_1open)
 	(JNIEnv* jenv, jclass jcls, jstring path, jint write_bufsize, jint cache_size, jboolean use_snappy)
 {
 	if(!path) return 0;
@@ -68,7 +70,7 @@ extern "C" JNIEXPORT jlong JNICALL Java_jane_core_StorageLevelDB_leveldb_1open
 }
 
 // public static native long leveldb_open2(String path, int write_bufsize, int cache_size, int file_size, boolean use_snappy);
-extern "C" JNIEXPORT jlong JNICALL Java_jane_core_StorageLevelDB_leveldb_1open2
+extern "C" JNIEXPORT jlong JNICALL DEF_JAVA(leveldb_1open2)
 	(JNIEnv* jenv, jclass jcls, jstring path, jint write_bufsize, jint cache_size, jint file_size, jboolean use_snappy)
 {
 	if(!path) return 0;
@@ -91,7 +93,7 @@ extern "C" JNIEXPORT jlong JNICALL Java_jane_core_StorageLevelDB_leveldb_1open2
 }
 
 // public static native long leveldb_open3(String path, int write_bufsize, int max_open_files, int cache_size, int file_size, boolean use_snappy, boolean reuse_logs);
-extern "C" JNIEXPORT jlong JNICALL Java_jane_core_StorageLevelDB_leveldb_1open3
+extern "C" JNIEXPORT jlong JNICALL DEF_JAVA(leveldb_1open3)
 	(JNIEnv* jenv, jclass jcls, jstring path, jint write_bufsize, jint max_open_files, jint cache_size, jint file_size, jboolean use_snappy, jboolean reuse_logs)
 {
 	if(!path) return 0;
@@ -116,7 +118,7 @@ extern "C" JNIEXPORT jlong JNICALL Java_jane_core_StorageLevelDB_leveldb_1open3
 }
 
 // public static native void leveldb_close(long handle);
-extern "C" JNIEXPORT void JNICALL Java_jane_core_StorageLevelDB_leveldb_1close
+extern "C" JNIEXPORT void JNICALL DEF_JAVA(leveldb_1close)
 	(JNIEnv* jenv, jclass jcls, jlong handle)
 {
 	if(handle)
@@ -130,7 +132,7 @@ extern "C" JNIEXPORT void JNICALL Java_jane_core_StorageLevelDB_leveldb_1close
 }
 
 // public static native byte[] leveldb_get(long handle, byte[] key, int keylen); // return null for not found
-extern "C" JNIEXPORT jbyteArray JNICALL Java_jane_core_StorageLevelDB_leveldb_1get
+extern "C" JNIEXPORT jbyteArray JNICALL DEF_JAVA(leveldb_1get)
 	(JNIEnv* jenv, jclass jcls, jlong handle, jbyteArray key, jint keylen)
 {
 	DB* db = (DB*)handle;
@@ -151,7 +153,7 @@ extern "C" JNIEXPORT jbyteArray JNICALL Java_jane_core_StorageLevelDB_leveldb_1g
 }
 
 // public static native int leveldb_write(long handle, Iterator<Entry<Octets, Octets>> it); // return 0 for ok
-extern "C" JNIEXPORT jint JNICALL Java_jane_core_StorageLevelDB_leveldb_1write
+extern "C" JNIEXPORT jint JNICALL DEF_JAVA(leveldb_1write)
 	(JNIEnv* jenv, jclass jcls, jlong handle, jobject it)
 {
 	DB* db = (DB*)handle;
@@ -289,7 +291,7 @@ static int64_t AppendFile(Env& env, const std::string& srcfile, const std::strin
 }
 
 // public static native long leveldb_backup(long handle, String srcpath, String dstpath, String datetime); // return byte-size of copied data
-extern "C" JNIEXPORT jlong JNICALL Java_jane_core_StorageLevelDB_leveldb_1backup
+extern "C" JNIEXPORT jlong JNICALL DEF_JAVA(leveldb_1backup)
 	(JNIEnv* jenv, jclass jcls, jlong handle, jstring srcpath, jstring dstpath, jstring datetime)
 {
 	if(!srcpath || !dstpath || !datetime) return -1;
@@ -364,7 +366,7 @@ extern "C" JNIEXPORT jlong JNICALL Java_jane_core_StorageLevelDB_leveldb_1backup
 }
 
 // public static native long leveldb_iter_new(long handle, byte[] key, int keylen, int type); // type=0|1|2|3: <|<=|>=|>key
-extern "C" JNIEXPORT jlong JNICALL Java_jane_core_StorageLevelDB_leveldb_1iter_1new
+extern "C" JNIEXPORT jlong JNICALL DEF_JAVA(leveldb_1iter_1new)
 	(JNIEnv* jenv, jclass jcls, jlong handle, jbyteArray key, jint keylen, jint type)
 {
 	DB* db = (DB*)handle;
@@ -405,14 +407,14 @@ extern "C" JNIEXPORT jlong JNICALL Java_jane_core_StorageLevelDB_leveldb_1iter_1
 }
 
 // public static native void leveldb_iter_delete(long iter);
-extern "C" JNIEXPORT void JNICALL Java_jane_core_StorageLevelDB_leveldb_1iter_1delete
+extern "C" JNIEXPORT void JNICALL DEF_JAVA(leveldb_1iter_1delete)
 	(JNIEnv* jenv, jclass jcls, jlong iter)
 {
 	delete (Iterator*)iter;
 }
 
 // public static native byte[] leveldb_iter_next(long iter); // return cur-key(maybe null) and do next
-extern "C" JNIEXPORT jbyteArray JNICALL Java_jane_core_StorageLevelDB_leveldb_1iter_1next
+extern "C" JNIEXPORT jbyteArray JNICALL DEF_JAVA(leveldb_1iter_1next)
 	(JNIEnv* jenv, jclass jcls, jlong iter)
 {
 	Iterator* it = (Iterator*)iter;
@@ -425,7 +427,7 @@ extern "C" JNIEXPORT jbyteArray JNICALL Java_jane_core_StorageLevelDB_leveldb_1i
 }
 
 // public static native byte[] leveldb_iter_prev(long iter); // return cur-key(maybe null) and do prev
-extern "C" JNIEXPORT jbyteArray JNICALL Java_jane_core_StorageLevelDB_leveldb_1iter_1prev
+extern "C" JNIEXPORT jbyteArray JNICALL DEF_JAVA(leveldb_1iter_1prev)
 	(JNIEnv* jenv, jclass jcls, jlong iter)
 {
 	Iterator* it = (Iterator*)iter;
@@ -438,7 +440,7 @@ extern "C" JNIEXPORT jbyteArray JNICALL Java_jane_core_StorageLevelDB_leveldb_1i
 }
 
 // public static native byte[] leveldb_iter_value(long iter); // return cur-value(maybe null)
-extern "C" JNIEXPORT jbyteArray JNICALL Java_jane_core_StorageLevelDB_leveldb_1iter_1value
+extern "C" JNIEXPORT jbyteArray JNICALL DEF_JAVA(leveldb_1iter_1value)
 	(JNIEnv* jenv, jclass jcls, jlong iter)
 {
 	Iterator* it = (Iterator*)iter;
@@ -450,7 +452,7 @@ extern "C" JNIEXPORT jbyteArray JNICALL Java_jane_core_StorageLevelDB_leveldb_1i
 }
 
 // public static native boolean leveldb_compact(long handle, byte[] key_from, int key_from_len, byte[] key_to, int key_to_len);
-extern "C" JNIEXPORT jboolean JNICALL Java_jane_core_StorageLevelDB_leveldb_1compact
+extern "C" JNIEXPORT jboolean JNICALL DEF_JAVA(leveldb_1compact)
 	(JNIEnv* jenv, jclass jcls, jlong handle, jbyteArray key_from, jint key_from_len, jbyteArray key_to, jint key_to_len)
 {
 	DB* db = (DB*)handle;
@@ -492,7 +494,7 @@ extern "C" JNIEXPORT jboolean JNICALL Java_jane_core_StorageLevelDB_leveldb_1com
 }
 
 // public static native String leveldb_property(long handle, String property);
-extern "C" JNIEXPORT jstring JNICALL Java_jane_core_StorageLevelDB_leveldb_1property
+extern "C" JNIEXPORT jstring JNICALL DEF_JAVA(leveldb_1property)
 	(JNIEnv* jenv, jclass jcls, jlong handle, jstring property)
 {
 	DB* db = (DB*)handle;
