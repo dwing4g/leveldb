@@ -190,7 +190,7 @@ public:
 	virtual Status NewSequentialFile(const std::string& fname, SequentialFile** result) {
 		*result = 0;
 		WCHAR wbuf[MAX_PATH];
-		HANDLE file = CreateFileW(Utf8_Wchar(fname, wbuf), GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE,
+		HANDLE file = CreateFileW(Utf8_Wchar(fname, wbuf), GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
 			0, OPEN_EXISTING, FILE_FLAG_SEQUENTIAL_SCAN, 0);
 		if(file == INVALID_HANDLE_VALUE) return GetLastError() == ERROR_FILE_NOT_FOUND ? Status::NotFound(fname) : Status::IOError(fname);
 		*result = new WindowsSequentialFile(fname, file);
@@ -208,7 +208,7 @@ public:
 	virtual Status NewRandomAccessFile(const std::string& fname, RandomAccessFile** result) {
 		*result = 0;
 		WCHAR wbuf[MAX_PATH];
-		HANDLE file = CreateFileW(Utf8_Wchar(fname, wbuf), GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE,
+		HANDLE file = CreateFileW(Utf8_Wchar(fname, wbuf), GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
 			0, OPEN_EXISTING, FILE_FLAG_RANDOM_ACCESS, 0);
 		if(file == INVALID_HANDLE_VALUE) return GetLastError() == ERROR_FILE_NOT_FOUND ? Status::NotFound(fname) : Status::IOError(fname);
 		*result = new WindowsRandomAccessFile(fname, file);
@@ -298,6 +298,9 @@ public:
 	virtual Status RenameFile(const std::string& src, const std::string& target) {
 		WCHAR wbuf1[MAX_PATH], wbuf2[MAX_PATH];
 		BOOL r = MoveFileExW(Utf8_Wchar(src, wbuf1), Utf8_Wchar(target, wbuf2), MOVEFILE_REPLACE_EXISTING);
+		// Force a copy/delete operation as a fake rename if unable to because of existing open HANDLES.
+		if(!r && GetLastError() == ERROR_SHARING_VIOLATION && CopyFileW(wbuf1, wbuf2, FALSE) && DeleteFileW(wbuf1))
+			r = TRUE;
 		return r ? Status::OK() : Status::IOError(src, target);
 	}
 
