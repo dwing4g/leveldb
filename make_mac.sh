@@ -115,13 +115,13 @@ $COMPILE -c -msse4.2 -o crc32c_sse42.o crc32c/crc32c_sse42.cc
 echo building libleveldbjni64.dylib ...
 $COMPILE -DLEVELDB_SHARED_LIBRARY=1 -DLEVELDB_COMPILE_LIBRARY=1 -shared -fvisibility=hidden -dynamiclib -o libleveldbjni64.dylib $CORE_FILES crc32c/crc32c.cc crc32c_sse42.o
 
-# echo building libleveldb.a ...
-# $COMPILE -c $CORE_FILES $TEST_FILES
-# ar -rs libleveldb.a $OBJ_FILES
+echo building libleveldb.a ...
+$COMPILE -c $CORE_FILES $TEST_FILES
+ar -rs libleveldb.a $OBJ_FILES
 rm -f *.o 2> /dev/null
 
-# echo building db-tools ...
-# $COMPILE -o leveldbutil db/leveldbutil.cc libleveldb.a
-# $COMPILE -o db_bench    db/db_bench.cc    libleveldb.a
-# $COMPILE -o db_test     db/db_test.cc     libleveldb.a
-# $COMPILE -o env_test    util/env_test.cc  libleveldb.a
+echo building db-tools ...
+$COMPILE -o leveldbutil db/leveldbutil.cc libleveldb.a
+$COMPILE -o db_bench    db/db_bench.cc    libleveldb.a
+$COMPILE -o db_test     db/db_test.cc     libleveldb.a
+$COMPILE -o env_test    util/env_test.cc  libleveldb.a
