@@ -2,6 +2,10 @@
 
 cd `dirname $0`
 
+# note:
+# 1. if gcc supports c++11 (4.8+), remove "-Dconstexpr= -Doverride="
+# 2. if link with jemalloc, append "-ldl" to $COMPILE, append "libjemalloc.a" to so and tools building
+
 if [ "$JAVA_HOME" = "" ]; then JAVA_HOME=/usr/java/default; fi
 
 CORE_FILES="\
