@@ -125,6 +125,7 @@
       <AdditionalDependencies>kernel32.lib;advapi32.lib;Debug\leveldb32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ModuleDefinitionFile>leveldb.def</ModuleDefinitionFile>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -141,6 +142,7 @@
       <AdditionalDependencies>kernel32.lib;advapi32.lib;Debug_x64\leveldb64.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
       <ModuleDefinitionFile>leveldb.def</ModuleDefinitionFile>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -170,6 +172,7 @@
       </FixedBaseAddress>
       <AdditionalDependencies>kernel32.lib;advapi32.lib;Release\leveldb32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ModuleDefinitionFile>leveldb.def</ModuleDefinitionFile>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -199,6 +202,7 @@
       </FixedBaseAddress>
       <ModuleDefinitionFile>leveldb.def</ModuleDefinitionFile>
       <AdditionalDependencies>kernel32.lib;advapi32.lib;Release_x64\leveldb64.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

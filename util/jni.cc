@@ -26,6 +26,7 @@
 #include "db/db_impl.h"
 #include "db/filename.h"
 #include "db/version_set.h"
+#include "db/write_batch_internal.h"
 #include "table/format.h"
 #include "util/coding.h"
 
@@ -255,6 +256,19 @@ extern "C" JNIEXPORT jint JNICALL DEF_JAVA(leveldb_1write)
 			}
 		}
 	}
+	return db->Write(g_wo_sync, &wb).ok() ? 0 : 5;
+}
+
+// public static native int leveldb_write_direct(long handle, byte[] buf, int size);
+extern "C" JNIEXPORT jint JNICALL DEF_JAVA(leveldb_1write_1direct)
+	(JNIEnv* jenv, jclass jcls, jlong handle, jbyteArray buf, jint size)
+{
+	DB* db = (DB*)handle;
+	if(!db || !buf) return 1;
+	if(size < 4 || jenv->GetArrayLength(buf) < size) return 2;
+	WriteBatch wb;
+	char* pbuf = WriteBatchInternal::Resize(&wb, 8 + size);
+	jenv->GetByteArrayRegion(buf, 0, size, (jbyte*)pbuf + 8);
 	return db->Write(g_wo_sync, &wb).ok() ? 0 : 5;
 }
 

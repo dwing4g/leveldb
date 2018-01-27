@@ -30,11 +30,11 @@ class WriteBatchInternal {
   static void SetSequence(WriteBatch* batch, SequenceNumber seq);
 
   static Slice Contents(const WriteBatch* batch) {
-    return Slice(batch->rep_);
+    return Slice(batch->buf_, batch->size_);
   }
 
   static size_t ByteSize(const WriteBatch* batch) {
-    return batch->rep_.size();
+    return batch->size_;
   }
 
   static void SetContents(WriteBatch* batch, const Slice& contents);
@@ -42,6 +42,29 @@ class WriteBatchInternal {
   static Status InsertInto(const WriteBatch* batch, MemTable* memtable);
 
   static void Append(WriteBatch* dst, const WriteBatch* src);
+
+  static void EnsureCapacity(WriteBatch* batch, size_t cap) {
+    if (batch->cap_ < cap) {
+      do batch->cap_ <<= 1;
+      while (batch->cap_ < cap);
+      batch->buf_ = (char*)realloc(batch->buf_, batch->cap_);
+    }
+  }
+
+  static void Append(WriteBatch* batch, const char* buf, size_t size) {
+    size_t cap_need = batch->size_ + size;
+    EnsureCapacity(batch, cap_need);
+    memcpy(batch->buf_ + batch->size_, buf, size);
+    batch->size_ = cap_need;
+  }
+
+  static char* Resize(WriteBatch* batch, size_t size) {
+    if (size > batch->cap_) {
+      batch->buf_ = (char*)realloc(batch->buf_, batch->cap_ = size);
+    }
+    batch->size_ = size;
+    return batch->buf_;
+  }
 };
 
 }  // namespace leveldb

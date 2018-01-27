@@ -61,7 +61,8 @@ class LEVELDB_EXPORT WriteBatch {
  private:
   friend class WriteBatchInternal;
 
-  std::string rep_;  // See comment in write_batch.cc for the format of rep_
+  char* buf_;  // See comment in write_batch.cc for the format of buf_
+  size_t size_, cap_;
 
   // Intentionally copyable
 };
