@@ -259,7 +259,7 @@ extern "C" JNIEXPORT jint JNICALL DEF_JAVA(leveldb_1write)
 	return db->Write(g_wo_sync, &wb).ok() ? 0 : 5;
 }
 
-// public static native int leveldb_write_direct(long handle, byte[] buf, int size);
+// public static native int leveldb_write_direct(long handle, byte[] buf, int size); // return 0 for ok
 extern "C" JNIEXPORT jint JNICALL DEF_JAVA(leveldb_1write_1direct)
 	(JNIEnv* jenv, jclass jcls, jlong handle, jbyteArray buf, jint size)
 {

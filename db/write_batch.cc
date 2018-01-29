@@ -37,6 +37,7 @@ WriteBatch::~WriteBatch() {
 WriteBatch::Handler::~Handler() { }
 
 void WriteBatch::Clear() {
+  WriteBatchInternal::EnsureCapacity(this, kHeader + 124); // initial capacity
   WriteBatchInternal::Resize(this, kHeader);
   memset(buf_, 0, kHeader);
 }

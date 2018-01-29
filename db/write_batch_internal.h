@@ -45,8 +45,12 @@ class WriteBatchInternal {
 
   static void EnsureCapacity(WriteBatch* batch, size_t cap) {
     if (batch->cap_ < cap) {
-      do batch->cap_ <<= 1;
-      while (batch->cap_ < cap);
+      if (batch->cap_ == 0) {
+        batch->cap_ = cap;
+      } else {
+        do batch->cap_ <<= 1;
+        while (batch->cap_ < cap);
+      }
       batch->buf_ = (char*)realloc(batch->buf_, batch->cap_);
     }
   }
