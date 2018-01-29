@@ -62,6 +62,12 @@
       <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)crc32.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="util\env.cc" />
+    <ClCompile Include="util\env_posix.cc">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="util\env_windows.cc" />
     <ClCompile Include="util\filter_policy.cc" />
     <ClCompile Include="util\hash.cc" />

@@ -7,7 +7,7 @@
 #undef _WIN32_WINNT
 #define _WIN32_WINNT 0x500
 #include <windows.h>
-#include <shellapi.h>
+// #include <shellapi.h>
 #include <stdio.h>
 #undef DeleteFile
 #undef min
@@ -235,7 +235,7 @@ public:
 	virtual bool FileExists(const std::string& fname) {
 		WCHAR wbuf[MAX_PATH];
 		DWORD attr = GetFileAttributesW(Utf8_Wchar(fname, wbuf));
-		return attr != INVALID_FILE_ATTRIBUTES && !(attr & FILE_ATTRIBUTE_DIRECTORY);
+		return attr != INVALID_FILE_ATTRIBUTES; // && !(attr & FILE_ATTRIBUTE_DIRECTORY);
 	}
 
 	// Store in *result the names of the children of the specified directory.
@@ -251,8 +251,8 @@ public:
 		if(h == INVALID_HANDLE_VALUE) return Status::IOError(dir);
 		char buf[MAX_PATH];
 		do {
-			if(!(fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
-				result->push_back(Wchar_Utf8(fd.cFileName, buf));
+			// if(!(fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
+			result->push_back(Wchar_Utf8(fd.cFileName, buf));
 		}
 		while(FindNextFileW(h, &fd));
 		FindClose(h);
@@ -269,18 +269,26 @@ public:
 	// Create the specified directory.
 	virtual Status CreateDir(const std::string& dirname) {
 		WCHAR wbuf[MAX_PATH];
-		return CreateDirectoryW(Utf8_Wchar(dirname, wbuf), 0) ? Status::OK() : Status::IOError(dirname);
+		Utf8_Wchar(dirname, wbuf);
+		BOOL r;
+		for(int i = 0; i < 100; ++i) {
+			r = CreateDirectoryW(wbuf, 0);
+			if(r || GetLastError() != ERROR_ACCESS_DENIED) break;
+			Sleep(10); // CreateDirectory maybe failed by ERROR_ACCESS_DENIED, we have to try again
+		}
+		return r ? Status::OK() : Status::IOError(dirname);
 	}
 
 	// Delete the specified directory.
 	virtual Status DeleteDir(const std::string& dirname) {
 		WCHAR wbuf[MAX_PATH];
-		SHFILEOPSTRUCTW fileop = {0};
-		fileop.wFunc = FO_DELETE;
-		fileop.pFrom = Utf8_Wchar(dirname, wbuf);
-		fileop.fFlags = 0x14; // FOF_SILENT | FOF_NOCONFIRMATION
-		int nResult = SHFileOperationW(&fileop);
-		return !nResult && !fileop.fAnyOperationsAborted ? Status::OK() : Status::IOError(dirname);
+		return RemoveDirectoryW(Utf8_Wchar(dirname, wbuf)) ? Status::OK() : Status::IOError(dirname);
+		// SHFILEOPSTRUCTW fileop = {0};
+		// fileop.wFunc = FO_DELETE;
+		// fileop.pFrom = Utf8_Wchar(dirname, wbuf);
+		// fileop.fFlags = 0x14; // FOF_SILENT | FOF_NOCONFIRMATION
+		// int nResult = SHFileOperationW(&fileop);
+		// return !nResult && !fileop.fAnyOperationsAborted ? Status::OK() : Status::IOError(dirname);
 	}
 
 	// Store the size of fname in *file_size.
@@ -362,6 +370,9 @@ public:
 	virtual Status GetTestDirectory(std::string* path) {
 		WCHAR tempPath[MAX_PATH];
 		GetTempPathW(MAX_PATH, tempPath);
+		size_t len = wcslen(tempPath);
+		if(len > 0 && tempPath[len - 1] == L'\\')
+			tempPath[len - 1] = 0;
 		char buf[MAX_PATH];
 		*path = Wchar_Utf8(tempPath, buf);
 		return Status::OK();
