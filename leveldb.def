@@ -27,6 +27,7 @@ leveldb_create_snapshot
 leveldb_delete
 leveldb_destroy_db
 leveldb_env_destroy
+leveldb_env_get_test_directory
 leveldb_filterpolicy_create
 leveldb_filterpolicy_create_bloom
 leveldb_filterpolicy_destroy

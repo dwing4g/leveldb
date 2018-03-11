@@ -24,6 +24,7 @@ f:write("Java_jane_core_StorageLevelDB_leveldb_1open2\r\n")
 f:write("Java_jane_core_StorageLevelDB_leveldb_1open3\r\n")
 f:write("Java_jane_core_StorageLevelDB_leveldb_1property\r\n")
 f:write("Java_jane_core_StorageLevelDB_leveldb_1write\r\n")
+f:write("Java_jane_core_StorageLevelDB_leveldb_1write_1direct\r\n")
 for _, name in ipairs(names) do
 	f:write(name, "\r\n")
 end
