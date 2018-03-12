@@ -32,6 +32,10 @@
 
 #define DEF_JAVA(F) Java_jane_core_StorageLevelDB_ ## F
 
+namespace leveldb { port::Mutex g_mutex_backup; }
+
+#if defined(LEVELDB_SHARED_LIBRARY) && defined(LEVELDB_COMPILE_LIBRARY)
+
 using namespace leveldb;
 
 static const jint	WRITE_BUFSIZE_MIN	= 1 << 20;
@@ -45,8 +49,6 @@ static const ReadOptions	g_ro_cached;	// safe for global shared instance
 static ReadOptions			g_ro_nocached;	// safe for global shared instance
 static WriteOptions			g_wo_sync;		// safe for global shared instance
 static const FilterPolicy*	g_fp = 0;		// safe for global shared instance
-
-namespace leveldb { port::Mutex g_mutex_backup; }
 
 template<int N>
 class TempBuffer
@@ -548,4 +550,5 @@ extern "C" JNIEXPORT jstring JNICALL DEF_JAVA(leveldb_1property)
 	return r ? jenv->NewStringUTF(result.c_str()) : 0;
 }
 
+#endif
 #endif
