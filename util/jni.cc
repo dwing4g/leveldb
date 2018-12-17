@@ -38,10 +38,7 @@ namespace leveldb { port::Mutex g_mutex_backup; }
 
 using namespace leveldb;
 
-static const jint	WRITE_BUFSIZE_MIN	= 1 << 20;
-static const jint	OPEN_FILES_MIN		= 1000;
 static const jint	CACHE_SIZE_MIN		= 1 << 20;
-static const jint	FILE_SIZE_MIN		= 1 << 20;
 static const int	BLOOM_FILTER_BITS	= 10;
 static const size_t	FILE_BUF_SIZE		= 1 << 16;
 
@@ -86,7 +83,7 @@ extern "C" JNIEXPORT jlong JNICALL DEF_JAVA(leveldb_1open)
 	jenv->ReleaseStringUTFChars(path, pathptr);
 	Options opt;
 	opt.create_if_missing = true;
-	if(write_bufsize > 0) opt.write_buffer_size = (write_bufsize > WRITE_BUFSIZE_MIN ? write_bufsize : WRITE_BUFSIZE_MIN);
+	if(write_bufsize > 0) opt.write_buffer_size = write_bufsize;
 	if(cache_size > 0) opt.block_cache = NewLRUCache(cache_size > CACHE_SIZE_MIN ? cache_size : CACHE_SIZE_MIN);
 	opt.compression = (use_snappy ? kSnappyCompression : kNoCompression);
 	opt.filter_policy = (g_fp ? g_fp : (g_fp = NewBloomFilterPolicy(BLOOM_FILTER_BITS)));
@@ -108,9 +105,9 @@ extern "C" JNIEXPORT jlong JNICALL DEF_JAVA(leveldb_1open2)
 	jenv->ReleaseStringUTFChars(path, pathptr);
 	Options opt;
 	opt.create_if_missing = true;
-	if(write_bufsize > 0) opt.write_buffer_size = (write_bufsize > WRITE_BUFSIZE_MIN ? write_bufsize : WRITE_BUFSIZE_MIN);
+	if(write_bufsize > 0) opt.write_buffer_size = write_bufsize;
 	if(cache_size > 0) opt.block_cache = NewLRUCache(cache_size > CACHE_SIZE_MIN ? cache_size : CACHE_SIZE_MIN);
-	if(file_size > 0) opt.max_file_size = (file_size > FILE_SIZE_MIN ? file_size : FILE_SIZE_MIN);
+	if(file_size > 0) opt.max_file_size = file_size;
 	opt.compression = (use_snappy ? kSnappyCompression : kNoCompression);
 	opt.filter_policy = (g_fp ? g_fp : (g_fp = NewBloomFilterPolicy(BLOOM_FILTER_BITS)));
 	g_ro_nocached.fill_cache = false;
@@ -131,10 +128,10 @@ extern "C" JNIEXPORT jlong JNICALL DEF_JAVA(leveldb_1open3)
 	jenv->ReleaseStringUTFChars(path, pathptr);
 	Options opt;
 	opt.create_if_missing = true;
-	if(write_bufsize > 0) opt.write_buffer_size = (write_bufsize > WRITE_BUFSIZE_MIN ? write_bufsize : WRITE_BUFSIZE_MIN);
-	if(max_open_files > 0) opt.max_open_files = (max_open_files > OPEN_FILES_MIN ? max_open_files : OPEN_FILES_MIN);
+	if(write_bufsize > 0) opt.write_buffer_size = write_bufsize;
+	if(max_open_files > 0) opt.max_open_files = max_open_files;
 	if(cache_size > 0) opt.block_cache = NewLRUCache(cache_size > CACHE_SIZE_MIN ? cache_size : CACHE_SIZE_MIN);
-	if(file_size > 0) opt.max_file_size = (file_size > FILE_SIZE_MIN ? file_size : FILE_SIZE_MIN);
+	if(file_size > 0) opt.max_file_size = file_size;
 	opt.compression = (use_snappy ? kSnappyCompression : kNoCompression);
 	opt.reuse_logs = reuse_logs;
 	opt.filter_policy = (g_fp ? g_fp : (g_fp = NewBloomFilterPolicy(BLOOM_FILTER_BITS)));
