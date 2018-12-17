@@ -15,8 +15,7 @@ namespace log {
 Reader::Reporter::~Reporter() {
 }
 
-Reader::Reader(SequentialFile* file, Reporter* reporter, bool checksum,
-               uint64_t initial_offset)
+Reader::Reader(SequentialFile* file, Reporter* reporter, bool checksum)
     : file_(file),
       reporter_(reporter),
       checksum_(checksum),
@@ -24,45 +23,14 @@ Reader::Reader(SequentialFile* file, Reporter* reporter, bool checksum,
       buffer_(),
       eof_(false),
       last_record_offset_(0),
-      end_of_buffer_offset_(0),
-      initial_offset_(initial_offset),
-      resyncing_(initial_offset > 0) {
+      end_of_buffer_offset_(0) {
 }
 
 Reader::~Reader() {
   delete[] backing_store_;
 }
 
-bool Reader::SkipToInitialBlock() {
-  const size_t offset_in_block = initial_offset_ % kBlockSize;
-  uint64_t block_start_location = initial_offset_ - offset_in_block;
-
-  // Don't search a block if we'd be in the trailer
-  if (offset_in_block > kBlockSize - 6) {
-    block_start_location += kBlockSize;
-  }
-
-  end_of_buffer_offset_ = block_start_location;
-
-  // Skip to start of first block that can contain the initial record
-  if (block_start_location > 0) {
-    Status skip_status = file_->Skip(block_start_location);
-    if (!skip_status.ok()) {
-      ReportDrop(block_start_location, skip_status);
-      return false;
-    }
-  }
-
-  return true;
-}
-
 bool Reader::ReadRecord(Slice* record, std::string* scratch) {
-  if (last_record_offset_ < initial_offset_) {
-    if (!SkipToInitialBlock()) {
-      return false;
-    }
-  }
-
   scratch->clear();
   record->clear();
   bool in_fragmented_record = false;
@@ -79,17 +47,6 @@ bool Reader::ReadRecord(Slice* record, std::string* scratch) {
     // that it has returned, properly accounting for its header size.
     uint64_t physical_record_offset =
         end_of_buffer_offset_ - buffer_.size() - kHeaderSize - fragment.size();
-
-    if (resyncing_) {
-      if (record_type == kMiddleType) {
-        continue;
-      } else if (record_type == kLastType) {
-        resyncing_ = false;
-        continue;
-      } else {
-        resyncing_ = false;
-      }
-    }
 
     switch (record_type) {
       case kFullType:
@@ -185,8 +142,7 @@ void Reader::ReportCorruption(uint64_t bytes, const char* reason) {
 }
 
 void Reader::ReportDrop(uint64_t bytes, const Status& reason) {
-  if (reporter_ != NULL &&
-      end_of_buffer_offset_ - buffer_.size() - bytes >= initial_offset_) {
+  if (reporter_ && end_of_buffer_offset_ - buffer_.size() - bytes >= 0) {
     reporter_->Corruption(static_cast<size_t>(bytes), reason);
   }
 }
@@ -263,9 +219,8 @@ unsigned int Reader::ReadPhysicalRecord(Slice* result) {
 
     buffer_.remove_prefix(kHeaderSize + length);
 
-    // Skip physical record that started before initial_offset_
-    if (end_of_buffer_offset_ - buffer_.size() - kHeaderSize - length <
-        initial_offset_) {
+    // Skip physical record that started before 0
+    if (end_of_buffer_offset_ - buffer_.size() - kHeaderSize - length < 0) {
       result->clear();
       return kBadRecord;
     }

@@ -37,11 +37,7 @@ class Reader {
   // live while this Reader is in use.
   //
   // If "checksum" is true, verify checksums if available.
-  //
-  // The Reader will start reading at the first record located at physical
-  // position >= initial_offset within the file.
-  Reader(SequentialFile* file, Reporter* reporter, bool checksum,
-         uint64_t initial_offset);
+  Reader(SequentialFile* file, Reporter* reporter, bool checksum);
 
   ~Reader();
 
@@ -69,14 +65,6 @@ class Reader {
   uint64_t last_record_offset_;
   // Offset of the first location past the end of buffer_.
   uint64_t end_of_buffer_offset_;
-
-  // Offset at which to start looking for the first record to return
-  uint64_t const initial_offset_;
-
-  // True if we are resynchronizing after a seek (initial_offset_ > 0). In
-  // particular, a run of kMiddleType and kLastType records can be silently
-  // skipped in this mode
-  bool resyncing_;
 
   // Extend record types with the following special values
   enum {

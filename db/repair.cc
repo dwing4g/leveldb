@@ -190,8 +190,7 @@ class Repairer {
     // corruptions cause entire commits to be skipped instead of
     // propagating bad information (like overly large sequence
     // numbers).
-    log::Reader reader(lfile, &reporter, false/*do not checksum*/,
-                       0/*initial_offset*/);
+    log::Reader reader(lfile, &reporter, false/*do not checksum*/);
 
     // Read all the records and add to a memtable
     std::string scratch;

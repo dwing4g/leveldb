@@ -14,14 +14,29 @@
 #include "table/format.h"
 #include "table/two_level_iterator.h"
 #include "util/coding.h"
+#include "util/mutexlock.h"
 
 namespace leveldb {
+
+static size_t table_memory = 0;
+static port::Mutex table_memory_mutex;
+
+static void ChangeTableMemory(size_t delta) {
+    MutexLock l(&table_memory_mutex);
+    table_memory += delta;
+}
+
+size_t Table::GetTableMemory() {
+    MutexLock l(&table_memory_mutex);
+    return table_memory;
+}
 
 struct Table::Rep {
   ~Rep() {
     delete filter;
     delete [] filter_data;
     delete index_block;
+    ChangeTableMemory(-heap_size);
   }
 
   Options options;
@@ -30,6 +45,7 @@ struct Table::Rep {
   uint64_t cache_id;
   FilterBlockReader* filter;
   const char* filter_data;
+  size_t heap_size;
 
   BlockHandle metaindex_handle;  // Handle to metaindex_block: saved from footer
   Block* index_block;
@@ -76,8 +92,14 @@ Status Table::Open(const Options& options,
     rep->cache_id = (options.block_cache ? options.block_cache->NewId() : 0);
     rep->filter_data = NULL;
     rep->filter = NULL;
+    rep->heap_size = 0;
     *table = new Table(rep);
     (*table)->ReadMeta(footer);
+
+    if (index_block_contents.heap_allocated) {
+        rep->heap_size += index_block_contents.data.size();
+    }
+    ChangeTableMemory(rep->heap_size);
   }
 
   return s;
@@ -131,6 +153,7 @@ void Table::ReadFilter(const Slice& filter_handle_value) {
   }
   if (block.heap_allocated) {
     rep_->filter_data = block.data.data();     // Will need to delete later
+    rep_->heap_size += block.data.size();
   }
   rep_->filter = new FilterBlockReader(rep_->options.filter_policy, block.data);
 }

@@ -57,7 +57,7 @@ Status PrintLogContents(Env* env, const std::string& fname,
   }
   CorruptionReporter reporter;
   reporter.dst_ = dst;
-  log::Reader reader(file, &reporter, true, 0);
+  log::Reader reader(file, &reporter, true);
   Slice record;
   std::string scratch;
   while (reader.ReadRecord(&record, &scratch)) {

@@ -47,6 +47,8 @@ class TableCache {
   // Evict any entry for the specified file number
   void Evict(uint64_t file_number);
 
+  size_t TotalCharge() const { return cache_->TotalCharge(); }
+
  private:
   Env* const env_;
   const std::string dbname_;

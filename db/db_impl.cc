@@ -406,8 +406,7 @@ Status DBImpl::RecoverLogFile(uint64_t log_number, bool last_log,
   // paranoid_checks==false so that corruptions cause entire commits
   // to be skipped instead of propagating bad information (like overly
   // large sequence numbers).
-  log::Reader reader(file, &reporter, true/*checksum*/,
-                     0/*initial_offset*/);
+  log::Reader reader(file, &reporter, true/*checksum*/);
   Log(options_.info_log, "Recovering log #%llu",
       (unsigned long long) log_number);
 
@@ -1450,6 +1449,16 @@ bool DBImpl::GetProperty(const Slice& property, std::string* value) {
     char buf[50];
     snprintf(buf, sizeof(buf), "%llu",
              static_cast<unsigned long long>(total_usage));
+    value->append(buf);
+    return true;
+  } else if (in == "approximate-memory-usages") {
+    char buf[200];
+    snprintf(buf, sizeof(buf), "mem_table=%lluK+%lluK; table_cache=%lluK(%llu); block_cache=%lluK",
+             static_cast<unsigned long long>(mem_ ? mem_->ApproximateMemoryUsage() >> 10 : 0),
+             static_cast<unsigned long long>(imm_ ? imm_->ApproximateMemoryUsage() >> 10 : 0),
+             static_cast<unsigned long long>(Table::GetTableMemory() >> 10),
+             static_cast<unsigned long long>(table_cache_->TotalCharge()),
+             static_cast<unsigned long long>(options_.block_cache->TotalCharge() >> 10));
     value->append(buf);
     return true;
   }
