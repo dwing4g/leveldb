@@ -163,7 +163,7 @@ void WriteBatchInternal::SetContents(WriteBatch* b, const Slice& contents) {
 
 void WriteBatchInternal::Append(WriteBatch* dst, const WriteBatch* src) {
   SetCount(dst, Count(dst) + Count(src));
-  assert(src->rep_.size() >= kHeader);
+  assert(src->size_ >= kHeader);
   Append(dst, src->buf_ + kHeader, src->size_ - kHeader);
 }
 
