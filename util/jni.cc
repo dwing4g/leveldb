@@ -146,14 +146,12 @@ extern "C" JNIEXPORT jlong JNICALL DEF_JAVA(leveldb_1open3)
 extern "C" JNIEXPORT void JNICALL DEF_JAVA(leveldb_1close)
 	(JNIEnv* jenv, jclass jcls, jlong handle)
 {
-	if(handle)
-	{
-		DB* db = (DBImpl*)handle;
-		DBImpl* dbi = dynamic_cast<DBImpl*>(db);
-		Cache* cache = (dbi ? dbi->GetOptions().block_cache : 0);
-		delete db;
-		if(cache) delete cache;
-	}
+	DB* db = (DBImpl*)handle;
+	if(!db) return;
+	DBImpl* dbi = dynamic_cast<DBImpl*>(db);
+	Cache* cache = (dbi ? dbi->GetOptions().block_cache : 0);
+	delete db;
+	if(cache) delete cache;
 }
 
 // public static native byte[] leveldb_get(long handle, byte[] key, int keylen); // return null for not found
@@ -538,7 +536,7 @@ extern "C" JNIEXPORT jstring JNICALL DEF_JAVA(leveldb_1property)
 	(JNIEnv* jenv, jclass jcls, jlong handle, jstring property)
 {
 	DB* db = (DB*)handle;
-	if(!db) return 0;
+	if(!db || !property) return 0;
 	std::string result;
 	const char* propptr = jenv->GetStringUTFChars(property, 0);
 	if(!propptr) return 0;
