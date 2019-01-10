@@ -2,6 +2,9 @@
 
 cd `dirname $0`
 
+# note:
+# 1. install JDK 8 or later and set $JAVA_INCLUDE if JDK is not in default path
+
 if [ "$JAVA_INCLUDE" = "" ]; then JAVA_INCLUDE=/System/Library/Frameworks/JavaVM.framework/Versions/A/Headers; fi
 
 CORE_FILES="\

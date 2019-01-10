@@ -6,7 +6,10 @@ cd `dirname $0`
 # 1. if gcc supports c++11 (4.8+), remove "-Dconstexpr= -Doverride="
 # 2. configure and make jemalloc, then put the result "lib/libjemalloc.a" and "lib/libjemalloc_pic.a" in this path
 
-if [ "$JAVA_HOME" = "" ]; then JAVA_HOME=/usr/java/default; fi
+if [ -z $JAVA_HOME ]; then JAVA_HOME=/usr/java/default; fi
+
+JAVA_VER=`$JAVA_HOME/bin/java -version 2>&1 | awk -F "[ \"]" '/version/{print $4}'`
+if [[ $JAVA_VER < 1.8 ]]; then echo 'ERROR: JDK 1.8 or later is required!'; exit 1; fi
 
 CORE_FILES="\
 db/builder.cc \
