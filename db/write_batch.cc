@@ -42,7 +42,7 @@ void WriteBatch::Clear() {
   memset(buf_, 0, kHeader);
 }
 
-size_t WriteBatch::ApproximateSize() {
+size_t WriteBatch::ApproximateSize() const {
   return size_;
 }
 

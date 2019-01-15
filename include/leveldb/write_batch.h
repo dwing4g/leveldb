@@ -46,7 +46,7 @@ class LEVELDB_EXPORT WriteBatch {
   //
   // This number is tied to implementation details, and may change across
   // releases. It is intended for LevelDB usage metrics.
-  size_t ApproximateSize();
+  size_t ApproximateSize() const;
 
   // Support for iterating over the contents of a batch.
   class Handler {
