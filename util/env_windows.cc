@@ -153,25 +153,6 @@ public:
 	}
 };
 
-class WindowsLogger : public Logger {
-	WritableFile* log_;
-
-public:
-	WindowsLogger(WritableFile* log) : log_(log) {}
-	virtual ~WindowsLogger() { delete log_; }
-
-	// Write an entry to the log file with the specified format.
-	virtual void Logv(const char* format, va_list ap) {
-		const size_t kBufSize = 4096;
-		char buffer[kBufSize];
-		int written = vsnprintf(buffer, kBufSize - 1, format, ap);
-		if(written < 0) written = kBufSize - 1;
-		buffer[written++] = '\n';
-		log_->Append(Slice(buffer, written));
-		log_->Flush();
-	}
-};
-
 }
 
 class WindowsEnv : public Env {

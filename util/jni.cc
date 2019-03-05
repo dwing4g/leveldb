@@ -207,7 +207,9 @@ extern "C" JNIEXPORT jint JNICALL DEF_JAVA(leveldb_1write)
 		mid_getKey = jenv->GetMethodID(cls_entry, "getKey", "()Ljava/lang/Object;");
 		mid_getValue = jenv->GetMethodID(cls_entry, "getValue", "()Ljava/lang/Object;");
 		fid_buffer = jenv->GetFieldID(cls_octets, "_buffer", "[B");
+		if(!fid_buffer) fid_buffer = jenv->GetFieldID(cls_octets, "buffer", "[B");
 		fid_count = jenv->GetFieldID(cls_octets, "_count", "I");
+		if(!fid_count) fid_count = jenv->GetFieldID(cls_octets, "count", "I");
 		if(!mid_hasNext || !mid_next || !mid_getKey || !mid_getValue || !fid_buffer || !fid_count) return s_err = 3;
 		s_err = 0;
 	}
