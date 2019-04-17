@@ -127,7 +127,8 @@ ar -rs libleveldb.a $OBJ_FILES
 rm -f *.o 2> /dev/null
 
 echo building db-tools ...
-$COMPILE -o leveldbutil db/leveldbutil.cc libleveldb.a
-$COMPILE -o db_bench    db/db_bench.cc    libleveldb.a
-$COMPILE -o db_test     db/db_test.cc     libleveldb.a
-$COMPILE -o env_test    util/env_test.cc  libleveldb.a
+$COMPILE -o leveldbutil      db/leveldbutil.cc      libleveldb.a
+$COMPILE -o db_bench         db/db_bench.cc         libleveldb.a
+$COMPILE -o db_test          db/db_test.cc          libleveldb.a
+$COMPILE -o env_test         util/env_test.cc       libleveldb.a
+$COMPILE -o version_set_test db/version_set_test.cc libleveldb.a

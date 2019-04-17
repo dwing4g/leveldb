@@ -128,7 +128,8 @@ ar -rs libleveldb.a $OBJ_FILES
 rm -f *.o 2> /dev/null
 
 echo building db-tools ...
-$COMPILE      -o leveldbutil db/leveldbutil.cc libleveldb.a libjemalloc.a
-$COMPILE -lrt -o db_bench    db/db_bench.cc    libleveldb.a libjemalloc.a
-$COMPILE -lrt -o db_test     db/db_test.cc     libleveldb.a libjemalloc.a
-$COMPILE      -o env_test    util/env_test.cc  libleveldb.a libjemalloc.a
+$COMPILE      -o leveldbutil      db/leveldbutil.cc      libleveldb.a libjemalloc.a
+$COMPILE -lrt -o db_bench         db/db_bench.cc         libleveldb.a libjemalloc.a
+$COMPILE -lrt -o db_test          db/db_test.cc          libleveldb.a libjemalloc.a
+$COMPILE      -o env_test         util/env_test.cc       libleveldb.a libjemalloc.a
+$COMPILE -lrt -o version_set_test db/version_set_test.cc libleveldb.a libjemalloc.a

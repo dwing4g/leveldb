@@ -119,14 +119,16 @@ echo building leveldbjni64.dll ...
 %COMPILE64% -DLEVELDB_SHARED_LIBRARY -DLEVELDB_COMPILE_LIBRARY -shared -Wl,--image-base,0x10000000 -Wl,--kill-at -Wl,-soname -Wl,leveldbjni64.dll -o leveldbjni64.dll %CORE_FILES% crc32c_sse42_64.o
 
 echo building db-tools ...
-%COMPILE32% -o leveldbutil32.exe db/leveldbutil.cc %CORE_FILES% %TEST_FILES% crc32c_sse42_32.o
-%COMPILE64% -o leveldbutil64.exe db/leveldbutil.cc %CORE_FILES% %TEST_FILES% crc32c_sse42_64.o
-%COMPILE32% -o db_bench32.exe    db/db_bench.cc    %CORE_FILES% %TEST_FILES% crc32c_sse42_32.o
-%COMPILE64% -o db_bench64.exe    db/db_bench.cc    %CORE_FILES% %TEST_FILES% crc32c_sse42_64.o
-%COMPILE32% -o db_test32.exe     db/db_test.cc     %CORE_FILES% %TEST_FILES% crc32c_sse42_32.o
-%COMPILE64% -o db_test64.exe     db/db_test.cc     %CORE_FILES% %TEST_FILES% crc32c_sse42_64.o
-%COMPILE32% -o env_test32.exe    util/env_test.cc  %CORE_FILES% %TEST_FILES% crc32c_sse42_32.o
-%COMPILE64% -o env_test64.exe    util/env_test.cc  %CORE_FILES% %TEST_FILES% crc32c_sse42_64.o
+%COMPILE32% -o leveldbutil32.exe      db/leveldbutil.cc      %CORE_FILES% %TEST_FILES% crc32c_sse42_32.o
+%COMPILE64% -o leveldbutil64.exe      db/leveldbutil.cc      %CORE_FILES% %TEST_FILES% crc32c_sse42_64.o
+%COMPILE32% -o db_bench32.exe         db/db_bench.cc         %CORE_FILES% %TEST_FILES% crc32c_sse42_32.o
+%COMPILE64% -o db_bench64.exe         db/db_bench.cc         %CORE_FILES% %TEST_FILES% crc32c_sse42_64.o
+%COMPILE32% -o db_test32.exe          db/db_test.cc          %CORE_FILES% %TEST_FILES% crc32c_sse42_32.o
+%COMPILE64% -o db_test64.exe          db/db_test.cc          %CORE_FILES% %TEST_FILES% crc32c_sse42_64.o
+%COMPILE32% -o env_test32.exe         util/env_test.cc       %CORE_FILES% %TEST_FILES% crc32c_sse42_32.o
+%COMPILE64% -o env_test64.exe         util/env_test.cc       %CORE_FILES% %TEST_FILES% crc32c_sse42_64.o
+%COMPILE32% -o version_set_test32.exe db/version_set_test.cc %CORE_FILES% %TEST_FILES% crc32c_sse42_32.o
+%COMPILE64% -o version_set_test64.exe db/version_set_test.cc %CORE_FILES% %TEST_FILES% crc32c_sse42_64.o
 
 del crc32c_sse42_??.o
 
