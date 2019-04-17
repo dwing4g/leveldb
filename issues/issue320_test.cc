@@ -45,8 +45,8 @@ TEST(Issue320, Test) {
   bool delete_before_put = false;
   bool keep_snapshots = true;
 
-  std::vector<std::pair<std::string, std::string>*> test_map(10000, nullptr);
-  std::vector<Snapshot const*> snapshots(100, nullptr);
+  std::vector<std::pair<std::string, std::string>*> test_map(10000, (std::pair<std::string, std::string>*)0);
+  std::vector<Snapshot const*> snapshots(100, (Snapshot const*)0);
 
   DB* db;
   Options options;
@@ -65,13 +65,13 @@ TEST(Issue320, Test) {
   ReadOptions readOptions;
   while (count < 200000) {
     if ((++count % 1000) == 0) {
-      cout << "count: " << count << endl;
+      std::cout << "count: " << count << std::endl;
     }
 
     int index = GenerateRandomNumber(test_map.size());
     WriteBatch batch;
 
-    if (test_map[index] == nullptr) {
+    if (test_map[index] == 0) {
       num_items++;
       test_map[index] = new std::pair<std::string, std::string>(
           CreateRandomString(index), CreateRandomString(index));
@@ -79,19 +79,19 @@ TEST(Issue320, Test) {
     } else {
       ASSERT_OK(db->Get(readOptions, test_map[index]->first, &old_value));
       if (old_value != test_map[index]->second) {
-        cout << "ERROR incorrect value returned by Get" << endl;
-        cout << "  count=" << count << endl;
-        cout << "  old value=" << old_value << endl;
-        cout << "  test_map[index]->second=" << test_map[index]->second << endl;
-        cout << "  test_map[index]->first=" << test_map[index]->first << endl;
-        cout << "  index=" << index << endl;
+        std::cout << "ERROR incorrect value returned by Get" << std::endl;
+        std::cout << "  count=" << count << std::endl;
+        std::cout << "  old value=" << old_value << std::endl;
+        std::cout << "  test_map[index]->second=" << test_map[index]->second << std::endl;
+        std::cout << "  test_map[index]->first=" << test_map[index]->first << std::endl;
+        std::cout << "  index=" << index << std::endl;
         ASSERT_EQ(old_value, test_map[index]->second);
       }
 
       if (num_items >= target_size && GenerateRandomNumber(100) > 30) {
         batch.Delete(test_map[index]->first);
         delete test_map[index];
-        test_map[index] = nullptr;
+        test_map[index] = 0;
         --num_items;
       } else {
         test_map[index]->second = CreateRandomString(index);
@@ -104,23 +104,24 @@ TEST(Issue320, Test) {
 
     if (keep_snapshots && GenerateRandomNumber(10) == 0) {
       int i = GenerateRandomNumber(snapshots.size());
-      if (snapshots[i] != nullptr) {
+      if (snapshots[i] != 0) {
         db->ReleaseSnapshot(snapshots[i]);
       }
       snapshots[i] = db->GetSnapshot();
     }
   }
 
-  for (Snapshot const* snapshot : snapshots) {
+  for (std::vector<Snapshot const*>::const_iterator it = snapshots.begin(), ie = snapshots.end(); it != ie; ++it) {
+  	Snapshot const* snapshot = *it;
     if (snapshot) {
       db->ReleaseSnapshot(snapshot);
     }
   }
 
   for (size_t i = 0; i < test_map.size(); ++i) {
-    if (test_map[i] != nullptr) {
+    if (test_map[i] != 0) {
       delete test_map[i];
-      test_map[i] = nullptr;
+      test_map[i] = 0;
     }
   }
 

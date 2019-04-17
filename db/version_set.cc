@@ -1371,13 +1371,13 @@ FileMetaData* FindSmallestBoundaryFile(
     const std::vector<FileMetaData*>& level_files,
     const InternalKey& largest_key) {
   const Comparator* user_cmp = icmp.user_comparator();
-  FileMetaData* smallest_boundary_file = nullptr;
+  FileMetaData* smallest_boundary_file = 0;
   for (size_t i = 0; i < level_files.size(); ++i) {
     FileMetaData* f = level_files[i];
     if (icmp.Compare(f->smallest, largest_key) > 0 &&
         user_cmp->Compare(f->smallest.user_key(), largest_key.user_key()) ==
             0) {
-      if (smallest_boundary_file == nullptr ||
+      if (smallest_boundary_file == 0 ||
           icmp.Compare(f->smallest, smallest_boundary_file->smallest) < 0) {
         smallest_boundary_file = f;
       }
