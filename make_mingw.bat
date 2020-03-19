@@ -104,7 +104,7 @@ snappy-stubs-internal.o ^
 testutil.o ^
 testharness.o
 
-set COMPILE=-std=c++0x -DNDEBUG -DOS_WIN=1 -D_POSIX -DLEVELDB_PLATFORM_POSIX=1 -DHAVE_CRC32C=1 -DHAVE_SNAPPY=1 -DHAVE_BUILTIN_EXPECT=1 -DHAVE_BYTESWAP_H=1 -DHAVE_BUILTIN_CTZ=1 -DENABLE_JNI -D__USE_MINGW_ANSI_STDIO=1 -I. -Iinclude -Isnappy -Iport -Iport/vs/jni -Ofast -ffast-math -fweb -fomit-frame-pointer -fmerge-all-constants -fno-builtin-memcmp -flto -fwhole-program -pipe -pthread -static -lpthread
+set COMPILE=-std=c++0x -DNDEBUG -DOS_WIN=1 -D_POSIX -DLEVELDB_PLATFORM_POSIX=1 -DHAVE_CRC32C=1 -DHAVE_SNAPPY=1 -DHAVE_BUILTIN_EXPECT=1 -DHAVE_BYTESWAP_H=1 -DHAVE_BUILTIN_CTZ=1 -DENABLE_JNI -D__USE_MINGW_ANSI_STDIO=1 -I. -Iinclude -Isnappy -Iport -Iport/vs/jni -O3 -fweb -fomit-frame-pointer -fmerge-all-constants -fno-builtin-memcmp -flto -fwhole-program -pipe -pthread -static -lpthread
 
 set COMPILE32=i686-w64-mingw32-g++.exe -m32 -march=i686 %COMPILE% -Wl,--enable-stdcall-fixup
 set COMPILE64=x86_64-w64-mingw32-g++.exe -m64 %COMPILE%
