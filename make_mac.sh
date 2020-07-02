@@ -110,7 +110,7 @@ testutil.o \
 testharness.o \
 "
 
-COMPILE="g++ -std=c++0x -mmacosx-version-min=10.9 -DOS_LINUX=1 -DLEVELDB_PLATFORM_POSIX=1 -DHAVE_CRC32C=1 -DHAVE_SNAPPY=1 -DHAVE_BUILTIN_EXPECT=1 -DHAVE_BYTESWAP_H=1 -DHAVE_BUILTIN_CTZ=1 -DENABLE_JNI -DNDEBUG -I. -Iinclude -Isnappy -I${JAVA_INCLUDE} -m64 -O3 -ffast-math -fomit-frame-pointer -fmerge-all-constants -fno-builtin-memcmp -fPIC -pipe -pthread"
+COMPILE="g++ -std=c++0x -mmacosx-version-min=10.9 -DOS_LINUX=1 -DLEVELDB_PLATFORM_POSIX=1 -DHAVE_CRC32C=1 -DHAVE_SNAPPY=1 -DHAVE_BUILTIN_EXPECT=1 -DHAVE_BYTESWAP_H=1 -DHAVE_BUILTIN_CTZ=1 -DENABLE_JNI -DNDEBUG -I. -Iinclude -Isnappy -I${JAVA_INCLUDE} -m64 -O3 -fno-strict-aliasing -fwrapv -fomit-frame-pointer -fmerge-all-constants -fno-builtin-memcmp -fPIC -pipe -pthread"
 
 $COMPILE -c          -o crc32c_.o      crc32c/crc32c.cc
 $COMPILE -c -msse4.2 -o crc32c_sse42.o crc32c/crc32c_sse42.cc
