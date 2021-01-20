@@ -440,9 +440,9 @@ bool GetUncompressedLength(const char* start, size_t n, size_t* result) {
 
 namespace {
 uint32 CalculateTableSize(uint32 input_size) {
-  static_assert(
-      kMaxHashTableSize >= kMinHashTableSize,
-      "kMaxHashTableSize should be greater or equal to kMinHashTableSize.");
+///  static_assert(
+///      kMaxHashTableSize >= kMinHashTableSize,
+///      "kMaxHashTableSize should be greater or equal to kMinHashTableSize.");
   if (input_size > kMaxHashTableSize) {
     return kMaxHashTableSize;
   }

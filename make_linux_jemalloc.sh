@@ -3,7 +3,7 @@
 cd `dirname $0`
 
 # note:
-# 1. if gcc supports c++11 (4.8+), remove "-Dconstexpr= -Doverride="
+# 1. if gcc supports c++11 (4.8+), remove "-Dconstexpr= -Dnullptr=0 -Doverride="
 # 2. configure and make jemalloc, then put the result "lib/libjemalloc.a" and "lib/libjemalloc_pic.a" in this path
 
 if [ -z $JAVA_HOME ]; then JAVA_HOME=/usr/java/default; fi
@@ -114,7 +114,7 @@ testutil.o \
 testharness.o \
 "
 
-COMPILE="g++ -std=c++0x -DOS_LINUX=1 -DLEVELDB_PLATFORM_POSIX=1 -DHAVE_CRC32C=1 -DHAVE_SNAPPY=1 -DHAVE_BUILTIN_EXPECT=1 -DHAVE_BYTESWAP_H=1 -DHAVE_BUILTIN_CTZ=1 -DENABLE_JNI -DNDEBUG -Dconstexpr= -Doverride= -I. -Iinclude -Isnappy -I${JAVA_HOME}/include -I${JAVA_HOME}/include/linux -m64 -O3 -fweb -fno-strict-aliasing -fwrapv -fomit-frame-pointer -fmerge-all-constants -fno-builtin-memcmp -fPIC -pipe -pthread -ldl"
+COMPILE="g++ -std=c++0x -DOS_LINUX=1 -DLEVELDB_PLATFORM_POSIX=1 -DHAVE_CRC32C=1 -DHAVE_SNAPPY=1 -DHAVE_BUILTIN_EXPECT=1 -DHAVE_BYTESWAP_H=1 -DHAVE_BUILTIN_CTZ=1 -DENABLE_JNI -DNDEBUG -Dconstexpr= -Dnullptr=0 -Doverride= -I. -Iinclude -Isnappy -I${JAVA_HOME}/include -I${JAVA_HOME}/include/linux -m64 -O3 -fweb -fno-strict-aliasing -fwrapv -fomit-frame-pointer -fmerge-all-constants -fno-builtin-memcmp -fPIC -pipe -pthread -ldl"
 
 $COMPILE -c          -o crc32c_.o      crc32c/crc32c.cc
 $COMPILE -c -msse4.2 -o crc32c_sse42.o crc32c/crc32c_sse42.cc
