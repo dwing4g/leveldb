@@ -171,6 +171,9 @@
     <ClCompile Include="util\env_posix.cc">
       <Filter>util</Filter>
     </ClCompile>
+    <ClCompile Include="crc32c\crc32c_arm64.cc">
+      <Filter>crc32c</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="db\builder.h">
@@ -360,6 +363,21 @@
       <Filter>crc32c</Filter>
     </ClInclude>
     <ClInclude Include="crc32c\crc32c_sse42_check.h">
+      <Filter>crc32c</Filter>
+    </ClInclude>
+    <ClInclude Include="crc32c\crc32c_arm64.h">
+      <Filter>crc32c</Filter>
+    </ClInclude>
+    <ClInclude Include="crc32c\crc32c_arm64_check.h">
+      <Filter>crc32c</Filter>
+    </ClInclude>
+    <ClInclude Include="crc32c\crc32c_prefetch.h">
+      <Filter>crc32c</Filter>
+    </ClInclude>
+    <ClInclude Include="crc32c\crc32c_read_le.h">
+      <Filter>crc32c</Filter>
+    </ClInclude>
+    <ClInclude Include="crc32c\crc32c_round_up.h">
       <Filter>crc32c</Filter>
     </ClInclude>
   </ItemGroup>

@@ -20,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="crc32c\crc32c.cc" />
+    <ClCompile Include="crc32c\crc32c_arm64.cc" />
     <ClCompile Include="crc32c\crc32c_portable.cc" />
     <ClCompile Include="crc32c\crc32c_sse42.cc" />
     <ClCompile Include="db\builder.cc" />
@@ -78,8 +79,13 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="crc32c\crc32c.h" />
+    <ClInclude Include="crc32c\crc32c_arm64.h" />
+    <ClInclude Include="crc32c\crc32c_arm64_check.h" />
     <ClInclude Include="crc32c\crc32c_config.h" />
     <ClInclude Include="crc32c\crc32c_internal.h" />
+    <ClInclude Include="crc32c\crc32c_prefetch.h" />
+    <ClInclude Include="crc32c\crc32c_read_le.h" />
+    <ClInclude Include="crc32c\crc32c_round_up.h" />
     <ClInclude Include="crc32c\crc32c_sse42.h" />
     <ClInclude Include="crc32c\crc32c_sse42_check.h" />
     <ClInclude Include="db\builder.h" />
@@ -146,32 +152,32 @@
     <ProjectGuid>{5CADDEB3-A73D-46E5-AF99-05CF64C1FE52}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>leveldb</RootNamespace>
-    <WindowsTargetPlatformVersion>7.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v141_xp</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v141_xp</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v141_xp</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v141_xp</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
