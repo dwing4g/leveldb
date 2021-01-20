@@ -172,7 +172,8 @@ extern "C" JNIEXPORT jbyteArray JNICALL DEF_JAVA(leveldb_1get)
 	if(!s.ok()) return 0;
 	jsize vallen = (jsize)valstr.size();
 	jbyteArray val = jenv->NewByteArray(vallen);
-	jenv->SetByteArrayRegion(val, 0, vallen, (const jbyte*)valstr.data());
+	if(val && !valstr.empty())
+		jenv->SetByteArrayRegion(val, 0, vallen, (const jbyte*)valstr.data());
 	return val;
 }
 
@@ -463,7 +464,8 @@ extern "C" JNIEXPORT jbyteArray JNICALL DEF_JAVA(leveldb_1iter_1next)
 	if(!it || !it->Valid()) return 0;
 	const Slice& slice = it->key();
 	jbyteArray key = jenv->NewByteArray((jsize)slice.size());
-	jenv->SetByteArrayRegion(key, 0, (jsize)slice.size(), (const jbyte*)slice.data());
+	if(key && !slice.empty())
+		jenv->SetByteArrayRegion(key, 0, (jsize)slice.size(), (const jbyte*)slice.data());
 	it->Next();
 	return key;
 }
@@ -476,7 +478,8 @@ extern "C" JNIEXPORT jbyteArray JNICALL DEF_JAVA(leveldb_1iter_1prev)
 	if(!it || !it->Valid()) return 0;
 	const Slice& slice = it->key();
 	jbyteArray key = jenv->NewByteArray((jsize)slice.size());
-	jenv->SetByteArrayRegion(key, 0, (jsize)slice.size(), (const jbyte*)slice.data());
+	if(key && !slice.empty())
+		jenv->SetByteArrayRegion(key, 0, (jsize)slice.size(), (const jbyte*)slice.data());
 	it->Prev();
 	return key;
 }
@@ -489,7 +492,8 @@ extern "C" JNIEXPORT jbyteArray JNICALL DEF_JAVA(leveldb_1iter_1value)
 	if(!it || !it->Valid()) return 0;
 	const Slice& slice = it->value();
 	jbyteArray val = jenv->NewByteArray((jsize)slice.size());
-	jenv->SetByteArrayRegion(val, 0, (jsize)slice.size(), (const jbyte*)slice.data());
+	if(val && !slice.empty())
+		jenv->SetByteArrayRegion(val, 0, (jsize)slice.size(), (const jbyte*)slice.data());
 	return val;
 }
 
