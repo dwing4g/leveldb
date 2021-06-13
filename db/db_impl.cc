@@ -37,6 +37,8 @@
 
 namespace leveldb {
 
+port::Mutex g_mutex_bgwork;
+
 const int kNumNonTableCacheFiles = 10;
 
 // Information kept for every waiting writer
@@ -677,7 +679,9 @@ void DBImpl::MaybeScheduleCompaction() {
 }
 
 void DBImpl::BGWork(void* db) {
+  g_mutex_bgwork.Lock();
   reinterpret_cast<DBImpl*>(db)->BackgroundCall();
+  g_mutex_bgwork.Unlock();
 }
 
 void DBImpl::BackgroundCall() {
@@ -1439,6 +1443,16 @@ bool DBImpl::GetProperty(const Slice& property, std::string* value) {
     char buf[50];
     std::snprintf(buf, sizeof(buf), "%llu",
                   static_cast<unsigned long long>(total_usage));
+    value->append(buf);
+    return true;
+  } else if (in == "approximate-memory-usages") {
+    char buf[200];
+    snprintf(buf, sizeof(buf), "mem_table=%lluK+%lluK; table_cache=%lluK(%llu); block_cache=%lluK",
+             static_cast<unsigned long long>(mem_ ? mem_->ApproximateMemoryUsage() >> 10 : 0),
+             static_cast<unsigned long long>(imm_ ? imm_->ApproximateMemoryUsage() >> 10 : 0),
+             static_cast<unsigned long long>(Table::GetTableCacheSize() >> 10),
+             static_cast<unsigned long long>(table_cache_->TotalCharge()),
+             static_cast<unsigned long long>(options_.block_cache->TotalCharge() >> 10));
     value->append(buf);
     return true;
   }

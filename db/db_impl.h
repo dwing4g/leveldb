@@ -71,6 +71,8 @@ class DBImpl : public DB {
   // bytes.
   void RecordReadSample(Slice key);
 
+  const Options& GetOptions() const { return options_; }
+
  private:
   friend class DB;
   struct CompactionState;

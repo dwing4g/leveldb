@@ -6,3 +6,13 @@
 # Build directory.
 build/
 out/
+
+# my
+/.vs/
+/Debug/
+/Debug_x64/
+/Release/
+/Release_x64/
+/*.vcxproj.user
+/*.dll
+/*.exe

@@ -35,6 +35,8 @@
 
 namespace leveldb {
 
+UINT g_code_page = CP_ACP;
+
 namespace {
 
 constexpr const size_t kWritableFileBufferSize = 65536;
@@ -45,19 +47,32 @@ constexpr int kDefaultMmapLimit = (sizeof(void*) >= 8) ? 1000 : 0;
 // Can be set by by EnvWindowsTestHelper::SetReadOnlyMMapLimit().
 int g_mmap_limit = kDefaultMmapLimit;
 
+static WCHAR* Utf8_Wchar(const std::string& src, WCHAR dst[MAX_PATH]) {
+  dst[MultiByteToWideChar(g_code_page, 0, static_cast<LPCSTR>(src.c_str()),
+                          (int)src.size(), dst, MAX_PATH - 1)] = 0;
+  return dst;
+}
+
+static char* Wchar_Utf8(const WCHAR* src, char* dst, int dstlen) {
+  dst[WideCharToMultiByte(g_code_page, 0, static_cast<LPCWSTR>(src), -1,
+                          dst, dstlen - 1, 0, 0)] = 0;
+  return dst;
+}
+
 std::string GetWindowsErrorMessage(DWORD error_code) {
   std::string message;
-  char* error_text = nullptr;
+  WCHAR* error_text = nullptr;
   // Use MBCS version of FormatMessage to match return value.
-  size_t error_text_size = ::FormatMessageA(
+  size_t error_text_size = ::FormatMessageW(
       FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER |
           FORMAT_MESSAGE_IGNORE_INSERTS,
       nullptr, error_code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-      reinterpret_cast<char*>(&error_text), 0, nullptr);
+      reinterpret_cast<WCHAR*>(&error_text), 0, nullptr);
   if (!error_text) {
     return message;
   }
-  message.assign(error_text, error_text_size);
+  char buf[4000];
+  message = Wchar_Utf8(error_text, buf, sizeof(buf));
   ::LocalFree(error_text);
   return message;
 }
@@ -375,9 +390,10 @@ class WindowsEnv : public Env {
     *result = nullptr;
     DWORD desired_access = GENERIC_READ;
     DWORD share_mode = FILE_SHARE_READ;
-    ScopedHandle handle = ::CreateFileA(
-        filename.c_str(), desired_access, share_mode,
-        /*lpSecurityAttributes=*/nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL,
+    WCHAR wbuf[MAX_PATH];
+    ScopedHandle handle = ::CreateFileW(
+        Utf8_Wchar(filename, wbuf), desired_access, share_mode,
+        /*lpSecurityAttributes=*/nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN,
         /*hTemplateFile=*/nullptr);
     if (!handle.is_valid()) {
       return WindowsError(filename, ::GetLastError());
@@ -392,10 +408,11 @@ class WindowsEnv : public Env {
     *result = nullptr;
     DWORD desired_access = GENERIC_READ;
     DWORD share_mode = FILE_SHARE_READ;
+    WCHAR wbuf[MAX_PATH];
     ScopedHandle handle =
-        ::CreateFileA(filename.c_str(), desired_access, share_mode,
+        ::CreateFileW(Utf8_Wchar(filename, wbuf), desired_access, share_mode,
                       /*lpSecurityAttributes=*/nullptr, OPEN_EXISTING,
-                      FILE_ATTRIBUTE_READONLY,
+                      FILE_ATTRIBUTE_READONLY | FILE_FLAG_RANDOM_ACCESS,
                       /*hTemplateFile=*/nullptr);
     if (!handle.is_valid()) {
       return WindowsError(filename, ::GetLastError());
@@ -413,7 +430,7 @@ class WindowsEnv : public Env {
     }
 
     ScopedHandle mapping =
-        ::CreateFileMappingA(handle.get(),
+        ::CreateFileMappingW(handle.get(),
                              /*security attributes=*/nullptr, PAGE_READONLY,
                              /*dwMaximumSizeHigh=*/0,
                              /*dwMaximumSizeLow=*/0,
@@ -437,9 +454,10 @@ class WindowsEnv : public Env {
   Status NewWritableFile(const std::string& filename,
                          WritableFile** result) override {
     DWORD desired_access = GENERIC_WRITE;
-    DWORD share_mode = 0;  // Exclusive access.
-    ScopedHandle handle = ::CreateFileA(
-        filename.c_str(), desired_access, share_mode,
+    DWORD share_mode = FILE_SHARE_READ;  // Exclusive access.
+    WCHAR wbuf[MAX_PATH];
+    ScopedHandle handle = ::CreateFileW(
+        Utf8_Wchar(filename, wbuf), desired_access, share_mode,
         /*lpSecurityAttributes=*/nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL,
         /*hTemplateFile=*/nullptr);
     if (!handle.is_valid()) {
@@ -454,9 +472,10 @@ class WindowsEnv : public Env {
   Status NewAppendableFile(const std::string& filename,
                            WritableFile** result) override {
     DWORD desired_access = FILE_APPEND_DATA;
-    DWORD share_mode = 0;  // Exclusive access.
-    ScopedHandle handle = ::CreateFileA(
-        filename.c_str(), desired_access, share_mode,
+    DWORD share_mode = FILE_SHARE_READ;  // Exclusive access.
+    WCHAR wbuf[MAX_PATH];
+    ScopedHandle handle = ::CreateFileW(
+        Utf8_Wchar(filename, wbuf), desired_access, share_mode,
         /*lpSecurityAttributes=*/nullptr, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL,
         /*hTemplateFile=*/nullptr);
     if (!handle.is_valid()) {
@@ -469,14 +488,16 @@ class WindowsEnv : public Env {
   }
 
   bool FileExists(const std::string& filename) override {
-    return GetFileAttributesA(filename.c_str()) != INVALID_FILE_ATTRIBUTES;
+    WCHAR wbuf[MAX_PATH];
+    return GetFileAttributesW(Utf8_Wchar(filename, wbuf)) != INVALID_FILE_ATTRIBUTES;
   }
 
   Status GetChildren(const std::string& directory_path,
                      std::vector<std::string>* result) override {
     const std::string find_pattern = directory_path + "\\*";
-    WIN32_FIND_DATAA find_data;
-    HANDLE dir_handle = ::FindFirstFileA(find_pattern.c_str(), &find_data);
+    WIN32_FIND_DATAW find_data;
+    WCHAR wbuf[MAX_PATH];
+    HANDLE dir_handle = ::FindFirstFileW(Utf8_Wchar(find_pattern, wbuf), &find_data);
     if (dir_handle == INVALID_HANDLE_VALUE) {
       DWORD last_error = ::GetLastError();
       if (last_error == ERROR_FILE_NOT_FOUND) {
@@ -484,15 +505,16 @@ class WindowsEnv : public Env {
       }
       return WindowsError(directory_path, last_error);
     }
+    char buf1[MAX_PATH], buf2[MAX_PATH];
     do {
-      char base_name[_MAX_FNAME];
-      char ext[_MAX_EXT];
+      WCHAR base_name[_MAX_FNAME];
+      WCHAR ext[_MAX_EXT];
 
-      if (!_splitpath_s(find_data.cFileName, nullptr, 0, nullptr, 0, base_name,
+      if (!_wsplitpath_s(find_data.cFileName, nullptr, 0, nullptr, 0, base_name,
                         ARRAYSIZE(base_name), ext, ARRAYSIZE(ext))) {
-        result->emplace_back(std::string(base_name) + ext);
+        result->emplace_back(std::string(Wchar_Utf8(base_name, buf1, sizeof(buf1))) + Wchar_Utf8(ext, buf2, sizeof(buf2)));
       }
-    } while (::FindNextFileA(dir_handle, &find_data));
+    } while (::FindNextFileW(dir_handle, &find_data));
     DWORD last_error = ::GetLastError();
     ::FindClose(dir_handle);
     if (last_error != ERROR_NO_MORE_FILES) {
@@ -502,21 +524,24 @@ class WindowsEnv : public Env {
   }
 
   Status RemoveFile(const std::string& filename) override {
-    if (!::DeleteFileA(filename.c_str())) {
+    WCHAR wbuf[MAX_PATH];
+    if (!::DeleteFileW(Utf8_Wchar(filename, wbuf))) {
       return WindowsError(filename, ::GetLastError());
     }
     return Status::OK();
   }
 
   Status CreateDir(const std::string& dirname) override {
-    if (!::CreateDirectoryA(dirname.c_str(), nullptr)) {
+    WCHAR wbuf[MAX_PATH];
+    if (!::CreateDirectoryW(Utf8_Wchar(dirname, wbuf), nullptr)) {
       return WindowsError(dirname, ::GetLastError());
     }
     return Status::OK();
   }
 
   Status RemoveDir(const std::string& dirname) override {
-    if (!::RemoveDirectoryA(dirname.c_str())) {
+    WCHAR wbuf[MAX_PATH];
+    if (!::RemoveDirectoryW(Utf8_Wchar(dirname, wbuf))) {
       return WindowsError(dirname, ::GetLastError());
     }
     return Status::OK();
@@ -524,7 +549,8 @@ class WindowsEnv : public Env {
 
   Status GetFileSize(const std::string& filename, uint64_t* size) override {
     WIN32_FILE_ATTRIBUTE_DATA file_attributes;
-    if (!::GetFileAttributesExA(filename.c_str(), GetFileExInfoStandard,
+    WCHAR wbuf[MAX_PATH];
+    if (!::GetFileAttributesExW(Utf8_Wchar(filename, wbuf), GetFileExInfoStandard,
                                 &file_attributes)) {
       return WindowsError(filename, ::GetLastError());
     }
@@ -538,7 +564,8 @@ class WindowsEnv : public Env {
   Status RenameFile(const std::string& from, const std::string& to) override {
     // Try a simple move first. It will only succeed when |to| doesn't already
     // exist.
-    if (::MoveFileA(from.c_str(), to.c_str())) {
+    WCHAR wbuf1[MAX_PATH], wbuf2[MAX_PATH];
+    if (::MoveFileW(Utf8_Wchar(from, wbuf1), Utf8_Wchar(to, wbuf2))) {
       return Status::OK();
     }
     DWORD move_error = ::GetLastError();
@@ -547,7 +574,7 @@ class WindowsEnv : public Env {
     // succeed when |to| does exist. When writing to a network share, we may not
     // be able to change the ACLs. Ignore ACL errors then
     // (REPLACEFILE_IGNORE_MERGE_ERRORS).
-    if (::ReplaceFileA(to.c_str(), from.c_str(), /*lpBackupFileName=*/nullptr,
+    if (::ReplaceFileW(Utf8_Wchar(to, wbuf1), Utf8_Wchar(from, wbuf2), /*lpBackupFileName=*/nullptr,
                        REPLACEFILE_IGNORE_MERGE_ERRORS,
                        /*lpExclude=*/nullptr, /*lpReserved=*/nullptr)) {
       return Status::OK();
@@ -567,8 +594,9 @@ class WindowsEnv : public Env {
   Status LockFile(const std::string& filename, FileLock** lock) override {
     *lock = nullptr;
     Status result;
-    ScopedHandle handle = ::CreateFileA(
-        filename.c_str(), GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ,
+    WCHAR wbuf[MAX_PATH];
+    ScopedHandle handle = ::CreateFileW(
+        Utf8_Wchar(filename, wbuf), GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ,
         /*lpSecurityAttributes=*/nullptr, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL,
         nullptr);
     if (!handle.is_valid()) {
@@ -608,12 +636,13 @@ class WindowsEnv : public Env {
       return Status::OK();
     }
 
-    char tmp_path[MAX_PATH];
-    if (!GetTempPathA(ARRAYSIZE(tmp_path), tmp_path)) {
+    WCHAR tmp_path[MAX_PATH];
+    if (!GetTempPathW(ARRAYSIZE(tmp_path), tmp_path)) {
       return WindowsError("GetTempPath", ::GetLastError());
     }
     std::stringstream ss;
-    ss << tmp_path << "leveldbtest-" << std::this_thread::get_id();
+    char buf[MAX_PATH];
+    ss << Wchar_Utf8(tmp_path, buf, sizeof(buf)) << "leveldbtest-" << std::this_thread::get_id();
     *result = ss.str();
 
     // Directory may already exist

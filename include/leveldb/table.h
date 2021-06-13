@@ -58,6 +58,8 @@ class LEVELDB_EXPORT Table {
   // be close to the file length.
   uint64_t ApproximateOffsetOf(const Slice& key) const;
 
+  static size_t GetTableCacheSize();
+
  private:
   friend class TableCache;
   struct Rep;

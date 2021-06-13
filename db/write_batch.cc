@@ -13,6 +13,8 @@
 //    len: varint32
 //    data: uint8[len]
 
+#include <algorithm>
+
 #include "leveldb/write_batch.h"
 
 #include "db/dbformat.h"
@@ -26,21 +28,22 @@ namespace leveldb {
 // WriteBatch header has an 8-byte sequence number followed by a 4-byte count.
 static const size_t kHeader = 12;
 
-WriteBatch::WriteBatch() { Clear(); }
+WriteBatch::WriteBatch() : buf_(0), len_(0), cap_(0) { Clear(); }
 
-WriteBatch::~WriteBatch() = default;
+WriteBatch::~WriteBatch() { free(buf_); }
 
 WriteBatch::Handler::~Handler() = default;
 
 void WriteBatch::Clear() {
-  rep_.clear();
-  rep_.resize(kHeader);
+  WriteBatchInternal::EnsureCapacity(this, kHeader + 124); // initial capacity for benchmark (16B key, 100B value)
+  WriteBatchInternal::Resize(this, kHeader);
+  memset(buf_, 0, kHeader);
 }
 
-size_t WriteBatch::ApproximateSize() const { return rep_.size(); }
+size_t WriteBatch::ApproximateSize() const { return len_; }
 
 Status WriteBatch::Iterate(Handler* handler) const {
-  Slice input(rep_);
+  Slice input(buf_, len_);
   if (input.size() < kHeader) {
     return Status::Corruption("malformed WriteBatch (too small)");
   }
@@ -80,32 +83,44 @@ Status WriteBatch::Iterate(Handler* handler) const {
 }
 
 int WriteBatchInternal::Count(const WriteBatch* b) {
-  return DecodeFixed32(b->rep_.data() + 8);
+  return DecodeFixed32(b->buf_ + 8);
 }
 
 void WriteBatchInternal::SetCount(WriteBatch* b, int n) {
-  EncodeFixed32(&b->rep_[8], n);
+  EncodeFixed32(b->buf_ + 8, n);
 }
 
 SequenceNumber WriteBatchInternal::Sequence(const WriteBatch* b) {
-  return SequenceNumber(DecodeFixed64(b->rep_.data()));
+  return SequenceNumber(DecodeFixed64(b->buf_));
 }
 
 void WriteBatchInternal::SetSequence(WriteBatch* b, SequenceNumber seq) {
-  EncodeFixed64(&b->rep_[0], seq);
+  EncodeFixed64(b->buf_, seq);
 }
 
 void WriteBatch::Put(const Slice& key, const Slice& value) {
   WriteBatchInternal::SetCount(this, WriteBatchInternal::Count(this) + 1);
-  rep_.push_back(static_cast<char>(kTypeValue));
-  PutLengthPrefixedSlice(&rep_, key);
-  PutLengthPrefixedSlice(&rep_, value);
+  const uint32_t klen = static_cast<uint32_t>(std::min(key.size(), static_cast<size_t>(UINT32_MAX)));
+  const uint32_t vlen = static_cast<uint32_t>(std::min(value.size(), static_cast<size_t>(UINT32_MAX)));
+  WriteBatchInternal::EnsureCapacity(this, len_ + 1 + 5 + klen + 5 + vlen);
+  char* p = buf_ + len_;
+  *p++ = static_cast<char>(kTypeValue);
+  p = EncodeVarint32(p, klen);
+  memcpy(p, key.data(), klen);
+  p = EncodeVarint32(p + klen, vlen);
+  memcpy(p, value.data(), vlen);
+  len_ = p + vlen - buf_;
 }
 
 void WriteBatch::Delete(const Slice& key) {
   WriteBatchInternal::SetCount(this, WriteBatchInternal::Count(this) + 1);
-  rep_.push_back(static_cast<char>(kTypeDeletion));
-  PutLengthPrefixedSlice(&rep_, key);
+  const uint32_t klen = static_cast<uint32_t>(std::min(key.size(), static_cast<size_t>(UINT32_MAX)));
+  WriteBatchInternal::EnsureCapacity(this, len_ + 1 + 5 + klen);
+  char* p = buf_ + len_;
+  *p++ = static_cast<char>(kTypeDeletion);
+  p = EncodeVarint32(p, klen);
+  memcpy(p, key.data(), klen);
+  len_ = p + klen - buf_;
 }
 
 void WriteBatch::Append(const WriteBatch& source) {
@@ -138,13 +153,17 @@ Status WriteBatchInternal::InsertInto(const WriteBatch* b, MemTable* memtable) {
 
 void WriteBatchInternal::SetContents(WriteBatch* b, const Slice& contents) {
   assert(contents.size() >= kHeader);
-  b->rep_.assign(contents.data(), contents.size());
+  if (b->cap_ < contents.size()) {
+    free(b->buf_);
+    b->buf_ = (char*)malloc(b->cap_ = contents.size());
+  }
+  memcpy(b->buf_, contents.data(), b->len_ = contents.size());
 }
 
 void WriteBatchInternal::Append(WriteBatch* dst, const WriteBatch* src) {
   SetCount(dst, Count(dst) + Count(src));
-  assert(src->rep_.size() >= kHeader);
-  dst->rep_.append(src->rep_.data() + kHeader, src->rep_.size() - kHeader);
+  assert(src->len_ >= kHeader);
+  Append(dst, src->buf_ + kHeader, src->len_ - kHeader);
 }
 
 }  // namespace leveldb

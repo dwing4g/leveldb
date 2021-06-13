@@ -21,8 +21,6 @@
 #ifndef STORAGE_LEVELDB_INCLUDE_WRITE_BATCH_H_
 #define STORAGE_LEVELDB_INCLUDE_WRITE_BATCH_H_
 
-#include <string>
-
 #include "leveldb/export.h"
 #include "leveldb/status.h"
 
@@ -75,7 +73,8 @@ class LEVELDB_EXPORT WriteBatch {
  private:
   friend class WriteBatchInternal;
 
-  std::string rep_;  // See comment in write_batch.cc for the format of rep_
+  char* buf_;  // See comment in write_batch.cc for the format of buf_
+  size_t len_, cap_;
 };
 
 }  // namespace leveldb

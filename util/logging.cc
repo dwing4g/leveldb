@@ -23,7 +23,7 @@ void AppendNumberTo(std::string* str, uint64_t num) {
 void AppendEscapedStringTo(std::string* str, const Slice& value) {
   for (size_t i = 0; i < value.size(); i++) {
     char c = value[i];
-    if (c >= ' ' && c <= '~') {
+    if (c >= ' ' && c <= '~' && c != '\\' && c != '\'' && c != '\"') {
       str->push_back(c);
     } else {
       char buf[10];

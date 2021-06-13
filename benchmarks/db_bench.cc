@@ -317,7 +317,7 @@ class Stats {
       // elapsed times.
       double elapsed = (finish_ - start_) * 1e-6;
       char rate[100];
-      std::snprintf(rate, sizeof(rate), "%6.1f MB/s",
+      std::snprintf(rate, sizeof(rate), "%7.1f MB/s",
                     (bytes_ / 1048576.0) / elapsed);
       extra = rate;
     }
@@ -397,7 +397,7 @@ class Benchmark {
         (((kKeySize + FLAGS_value_size * FLAGS_compression_ratio) * num_) /
          1048576.0));
     PrintWarnings();
-    std::fprintf(stdout, "------------------------------------------------\n");
+    std::fprintf(stdout, "--------------------------------------------------\n");
   }
 
   void PrintWarnings() {
@@ -582,6 +582,10 @@ class Benchmark {
         PrintStats("leveldb.stats");
       } else if (name == Slice("sstables")) {
         PrintStats("leveldb.sstables");
+      } else if (name == Slice("usage")) {
+        PrintStats("leveldb.approximate-memory-usage");
+      } else if (name == Slice("usages")) {
+        PrintStats("leveldb.approximate-memory-usages");
       } else {
         if (!name.empty()) {  // No error message for empty name
           std::fprintf(stderr, "unknown benchmark '%s'\n",
@@ -990,7 +994,7 @@ class Benchmark {
     if (!db_->GetProperty(key, &stats)) {
       stats = "(failed)";
     }
-    std::fprintf(stdout, "\n%s\n", stats.c_str());
+    std::fprintf(stdout, "%s:\n%s\n", key, stats.c_str());
   }
 
   static void WriteToFile(void* arg, const char* buf, int n) {

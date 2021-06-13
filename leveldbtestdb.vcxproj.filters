@@ -1,0 +1,74 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="db\db_test.cc" />
+    <ClCompile Include="util\testutil.cc" />
+    <ClCompile Include="gtest\src\gtest-all.cc" />
+    <ClCompile Include="benchmark\benchmark.cc">
+      <Filter>benchmark</Filter>
+    </ClCompile>
+    <ClCompile Include="benchmark\benchmark_api_internal.cc">
+      <Filter>benchmark</Filter>
+    </ClCompile>
+    <ClCompile Include="benchmark\benchmark_name.cc">
+      <Filter>benchmark</Filter>
+    </ClCompile>
+    <ClCompile Include="benchmark\benchmark_register.cc">
+      <Filter>benchmark</Filter>
+    </ClCompile>
+    <ClCompile Include="benchmark\benchmark_runner.cc">
+      <Filter>benchmark</Filter>
+    </ClCompile>
+    <ClCompile Include="benchmark\colorprint.cc">
+      <Filter>benchmark</Filter>
+    </ClCompile>
+    <ClCompile Include="benchmark\commandlineflags.cc">
+      <Filter>benchmark</Filter>
+    </ClCompile>
+    <ClCompile Include="benchmark\complexity.cc">
+      <Filter>benchmark</Filter>
+    </ClCompile>
+    <ClCompile Include="benchmark\console_reporter.cc">
+      <Filter>benchmark</Filter>
+    </ClCompile>
+    <ClCompile Include="benchmark\counter.cc">
+      <Filter>benchmark</Filter>
+    </ClCompile>
+    <ClCompile Include="benchmark\csv_reporter.cc">
+      <Filter>benchmark</Filter>
+    </ClCompile>
+    <ClCompile Include="benchmark\json_reporter.cc">
+      <Filter>benchmark</Filter>
+    </ClCompile>
+    <ClCompile Include="benchmark\reporter.cc">
+      <Filter>benchmark</Filter>
+    </ClCompile>
+    <ClCompile Include="benchmark\sleep.cc">
+      <Filter>benchmark</Filter>
+    </ClCompile>
+    <ClCompile Include="benchmark\statistics.cc">
+      <Filter>benchmark</Filter>
+    </ClCompile>
+    <ClCompile Include="benchmark\string_util.cc">
+      <Filter>benchmark</Filter>
+    </ClCompile>
+    <ClCompile Include="benchmark\sysinfo.cc">
+      <Filter>benchmark</Filter>
+    </ClCompile>
+    <ClCompile Include="benchmark\timers.cc">
+      <Filter>benchmark</Filter>
+    </ClCompile>
+    <ClCompile Include="gmock\src\gmock-all.cc" />
+    <ClCompile Include="benchmark\perf_counters.cc">
+      <Filter>benchmark</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="benchmark">
+      <UniqueIdentifier>{3c2215d7-c612-433d-8c3c-bc25634a1ffc}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="util\testutil.h" />
+  </ItemGroup>
+</Project>

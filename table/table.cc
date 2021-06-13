@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
+#include <atomic>
+
 #include "leveldb/table.h"
 
 #include "leveldb/cache.h"
@@ -17,11 +19,18 @@
 
 namespace leveldb {
 
+static std::atomic<size_t> table_cache_size(0);
+
+size_t Table::GetTableCacheSize() {
+  return table_cache_size.load(std::memory_order_relaxed);
+}
+
 struct Table::Rep {
   ~Rep() {
     delete filter;
     delete[] filter_data;
     delete index_block;
+    table_cache_size.fetch_sub(heap_size, std::memory_order_relaxed);
   }
 
   Options options;
@@ -30,6 +39,7 @@ struct Table::Rep {
   uint64_t cache_id;
   FilterBlockReader* filter;
   const char* filter_data;
+  size_t heap_size;
 
   BlockHandle metaindex_handle;  // Handle to metaindex_block: saved from footer
   Block* index_block;
@@ -72,8 +82,13 @@ Status Table::Open(const Options& options, RandomAccessFile* file,
     rep->cache_id = (options.block_cache ? options.block_cache->NewId() : 0);
     rep->filter_data = nullptr;
     rep->filter = nullptr;
+    rep->heap_size = 0;
     *table = new Table(rep);
     (*table)->ReadMeta(footer);
+
+    if (index_block_contents.heap_allocated)
+      rep->heap_size += index_block_contents.data.size();
+    table_cache_size.fetch_add(rep->heap_size, std::memory_order_relaxed);
   }
 
   return s;
@@ -127,6 +142,7 @@ void Table::ReadFilter(const Slice& filter_handle_value) {
   }
   if (block.heap_allocated) {
     rep_->filter_data = block.data.data();  // Will need to delete later
+    rep_->heap_size += block.data.size();
   }
   rep_->filter = new FilterBlockReader(rep_->options.filter_policy, block.data);
 }
